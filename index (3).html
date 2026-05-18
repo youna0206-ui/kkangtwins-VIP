@@ -560,12 +560,18 @@ function rST(){
         '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">';
       aw.forEach(function(w){
         var isLocked=w.locked;
-        h+='<div class="wk-row" style="flex:none;min-width:0;padding:.4rem .6rem;gap:6px;">'+
-          '<span style="font-size:12px;font-weight:600;color:var(--tx);">'+w.num+'주차</span>'+
+        h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--rs);padding:.4rem .75rem;">'+
+          '<span style="font-size:12px;font-weight:700;color:var(--tx);min-width:40px;">'+w.num+'주차</span>'+
           '<button class="lock-btn '+(isLocked?'locked':'open')+'" data-lock="'+s.id+'__'+w.num+'">'+(isLocked?'🔒 잠금':'🔓 열림')+'</button>'+
+          '<button style="font-size:11px;padding:3px 8px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;" data-delwk="'+s.id+'__'+w.num+'">🗑 삭제</button>'+
         '</div>';
       });
-      h+='<button class="add-wk-btn" data-addwk="'+s.id+'">+ 주차 추가</button></div></div>';
+      h+='<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap;">'+
+        '<span style="font-size:12px;color:var(--mu);">N주차까지 일괄생성:</span>'+
+        '<input type="number" min="1" max="99" placeholder="예: 8" id="wkin-'+s.id+'" style="width:60px;padding:.3rem .5rem;border-radius:8px;border:1.5px solid var(--br);font-size:13px;">'+
+        '<button class="add-wk-btn" data-addwk="'+s.id+'">+ 주차 생성</button>'+
+        '<button class="add-wk-btn" style="background:var(--bll);color:var(--bld);border-color:var(--bl);" data-addnext="'+s.id+'">+ 다음 주차</button>'+
+      '</div></div></div>';
     });
     h+='</div>';
   });
@@ -603,12 +609,34 @@ function rST(){
   });
   h+='</div></div>';
 
-  // 스터디 활성화
-  h+='<div><div class="st">📚 스터디 활성화</div>';
+  // 스터디 관리 (추가/삭제 + 활성화)
+  h+='<div><div class="st">📚 스터디 관리</div>';
+  // 새 스터디 추가
+  h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);padding:1rem;margin-bottom:12px;">'+
+    '<div style="font-size:13px;font-weight:600;color:var(--pr);margin-bottom:10px;">+ 새 스터디 추가</div>'+
+    '<div style="display:flex;flex-direction:column;gap:8px;">'+
+      '<input type="text" id="ns-name" class="ainp" placeholder="스터디 이름 (예: 싱어롱7~9)" style="width:100%">'+
+      '<div style="display:flex;gap:8px;">'+
+        '<select id="ns-cat" style="flex:1;padding:.6rem .75rem;border-radius:var(--rs);border:1.5px solid var(--br);font-size:13px;background:var(--wh);">'+
+          '<option value="">카테고리 선택...</option>'+
+          '<option value="입문스터디">입문스터디</option>'+
+          '<option value="엄세스">엄세스</option>'+
+          '<option value="방출스터디">방출스터디</option>'+
+          '<option value="멤버전용">멤버전용</option>'+
+          '<option value="기타">기타</option>'+
+        '</select>'+
+        '<button class="abtn" id="add-study">추가</button>'+
+      '</div>'+
+    '</div></div>';
+  // 카테고리별 목록
   cats.forEach(function(cat){
-    h+='<div style="margin-bottom:8px;"><div class="cat-hd">'+esc(cat)+'</div>';
+    h+='<div style="margin-bottom:10px;"><div class="cat-hd">'+esc(cat)+'</div>';
     S.studies.filter(function(s){return s.cat===cat;}).forEach(function(s){
-      h+='<div class="stog"><span>'+esc(s.name)+'</span><button class="tgl '+(s.active?'on':'off')+'" data-stg="'+s.id+'"></button></div>';
+      h+='<div class="stog">'+
+        '<span style="flex:1;">'+esc(s.name)+'</span>'+
+        '<button class="tgl '+(s.active?'on':'off')+'" data-stg="'+s.id+'" style="margin-right:8px;"></button>'+
+        '<button style="font-size:11px;padding:3px 8px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;" data-dels="'+s.id+'">🗑</button>'+
+      '</div>';
     });
     h+='</div>';
   });
@@ -686,13 +714,34 @@ function bAll(){
     });
   });
 
-  // 주차 추가
+  // 주차 삭제
+  document.querySelectorAll('[data-delwk]').forEach(function(el){
+    el.addEventListener('click',function(){
+      var p=el.dataset.delwk.split('__');var sid=p[0],wn=+p[1];
+      var s=S.studies.filter(function(x){return x.id===sid;})[0];if(!s)return;
+      if(!confirm(s.name+' '+wn+'주차를 삭제할까요?\n인증 기록은 유지됩니다.'))return;
+      s.weeks=s.weeks.filter(function(x){return x.num!==wn;});persist();
+    });
+  });
+
+  // 주차 생성 (총 N주차까지 일괄 생성)
   document.querySelectorAll('[data-addwk]').forEach(function(el){
     el.addEventListener('click',function(){
-      var s=S.studies.filter(function(x){return x.id===el.dataset.addwk;})[0];if(!s)return;
-      var aw=allWeeks(s);
-      var nextNum=aw.length>0?aw[aw.length-1].num+1:1;
-      s.weeks.push({num:nextNum,locked:false});persist();
+      var sid=el.dataset.addwk;
+      var s=S.studies.filter(function(x){return x.id===sid;})[0];if(!s)return;
+      var inp=document.getElementById('wkin-'+sid);
+      var total=inp?+inp.value:0;
+      if(!total||total<1||total>52){alert('1~52 사이 숫자를 입력해주세요\n예: 8 입력 → 1~8주차 생성');return;}
+      var added=0;
+      for(var i=1;i<=total;i++){
+        if(!s.weeks.filter(function(x){return x.num===i;}).length){
+          s.weeks.push({num:i,locked:false});added++;
+        }
+      }
+      s.weeks.sort(function(a,b){return a.num-b.num;});
+      if(inp)inp.value='';
+      if(added===0){alert('이미 1~'+total+'주차가 모두 있어요!');}
+      persist();
     });
   });
 
@@ -727,6 +776,43 @@ function bAll(){
       var s=S.studies.filter(function(x){return x.id===el.dataset.stg;})[0];
       if(s){s.active=!s.active;persist();}
     });
+  });
+
+  // 다음 주차 자동 추가
+  document.querySelectorAll('[data-addnext]').forEach(function(el){
+    el.addEventListener('click',function(){
+      var s=S.studies.filter(function(x){return x.id===el.dataset.addnext;})[0];if(!s)return;
+      var aw=s.weeks||[];
+      var nextNum=aw.length>0?Math.max.apply(null,aw.map(function(x){return x.num;}))+1:1;
+      s.weeks.push({num:nextNum,locked:false});
+      persist();
+    });
+  });
+
+  // 스터디 삭제
+  document.querySelectorAll('[data-dels]').forEach(function(el){
+    el.addEventListener('click',function(){
+      var s=S.studies.filter(function(x){return x.id===el.dataset.dels;})[0];if(!s)return;
+      if(!confirm('['+s.cat+'] '+s.name+'\n이 스터디를 삭제할까요?\n인증 기록은 유지됩니다.'))return;
+      S.studies=S.studies.filter(function(x){return x.id!==el.dataset.dels;});
+      persist();
+    });
+  });
+
+  // 스터디 추가
+  var addStudyBtn=document.getElementById('add-study');
+  if(addStudyBtn)addStudyBtn.addEventListener('click',function(){
+    var name=(document.getElementById('ns-name')||{}).value||'';
+    var cat=(document.getElementById('ns-cat')||{}).value||'';
+    name=name.trim();
+    if(!name){alert('스터디 이름을 입력해주세요');return;}
+    if(!cat){alert('카테고리를 선택해주세요');return;}
+    if(S.studies.filter(function(x){return x.name===name;}).length){alert('같은 이름의 스터디가 이미 있어요!');return;}
+    var newId='s'+Date.now().toString(36);
+    S.studies.push({id:newId,name:name,cat:cat,active:true,weeks:[{num:1,locked:false}]});
+    var el=document.getElementById('ns-name');if(el)el.value='';
+    var el2=document.getElementById('ns-cat');if(el2)el2.value='';
+    persist();
   });
 }
 
@@ -763,7 +849,20 @@ async function persist(){
 }
 function applyData(d){
   S.studies=d&&d.studies&&d.studies.length?d.studies:JSON.parse(JSON.stringify(DEFAULT_STUDIES));
-  S.members=d&&d.members&&d.members.length?d.members:JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
+  // Firebase 멤버 + DEFAULT_MEMBERS 병합 (새 멤버 자동 추가)
+  var dbMembers=d&&d.members&&d.members.length?d.members:[];
+  if(dbMembers.length){
+    var existIds=dbMembers.map(function(m){return m.id;});
+    var existNames=dbMembers.map(function(m){return m.name;});
+    DEFAULT_MEMBERS.forEach(function(dm){
+      if(existIds.indexOf(dm.id)<0&&existNames.indexOf(dm.name)<0){
+        dbMembers.push(JSON.parse(JSON.stringify(dm)));
+      }
+    });
+    S.members=dbMembers;
+  } else {
+    S.members=JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
+  }
   S.checkins=d&&d.checkins?d.checkins:{};
   // 마이그레이션: weeks 없으면 생성
   S.studies.forEach(function(s){
