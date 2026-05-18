@@ -339,7 +339,8 @@ function rApp(){
 }
 
 function rML(){
-  var opts=S.members.map(function(m){return '<option value="'+m.id+'">'+esc(m.name)+'</option>';}).join('');
+  var sorted=S.members.slice().sort(function(a,b){return a.name.localeCompare(b.name,'ko');});
+  var opts=sorted.map(function(m){return '<option value="'+m.id+'">'+esc(m.name)+'</option>';}).join('');
   return '<div class="login-wrap"><div class="login-box"><h2>👋 로그인</h2>'+
     '<p>이름과 비밀번호를 입력해주세요<br><span style="font-size:12px;color:var(--pr);">초기 비밀번호: 아이 생년월 4자리</span></p>'+
     '<div class="lstack"><select id="msel"><option value="">이름 선택...</option>'+opts+'</select>'+
@@ -632,8 +633,14 @@ function rST(){
   cats.forEach(function(cat){
     h+='<div style="margin-bottom:10px;"><div class="cat-hd">'+esc(cat)+'</div>';
     S.studies.filter(function(s){return s.cat===cat;}).forEach(function(s){
+      var catStudies=S.studies.filter(function(x){return x.cat===cat;});
+      var sidx=catStudies.indexOf(s);
       h+='<div class="stog">'+
-        '<span style="flex:1;">'+esc(s.name)+'</span>'+
+        '<div style="display:flex;flex-direction:column;gap:2px;margin-right:6px;">'+
+          '<button style="font-size:10px;padding:1px 5px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);line-height:1;" data-smup="'+s.id+'" '+(sidx===0?'disabled style="opacity:.3;"':'')+'>▲</button>'+
+          '<button style="font-size:10px;padding:1px 5px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);line-height:1;" data-smdn="'+s.id+'" '+(sidx===catStudies.length-1?'disabled style="opacity:.3;"':'')+'>▼</button>'+
+        '</div>'+
+        '<span style="flex:1;font-size:13px;">'+esc(s.name)+'</span>'+
         '<button class="tgl '+(s.active?'on':'off')+'" data-stg="'+s.id+'" style="margin-right:8px;"></button>'+
         '<button style="font-size:11px;padding:3px 8px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;" data-dels="'+s.id+'">🗑</button>'+
       '</div>';
@@ -786,6 +793,38 @@ function bAll(){
       var nextNum=aw.length>0?Math.max.apply(null,aw.map(function(x){return x.num;}))+1:1;
       s.weeks.push({num:nextNum,locked:false});
       persist();
+    });
+  });
+
+  // 스터디 순서 이동
+  document.querySelectorAll('[data-smup]').forEach(function(el){
+    el.addEventListener('click',function(){
+      var sid=el.dataset.smup;
+      var s=S.studies.filter(function(x){return x.id===sid;})[0];if(!s)return;
+      var cat=s.cat;
+      var idx=S.studies.indexOf(s);
+      // 같은 카테고리 안에서 위로
+      for(var i=idx-1;i>=0;i--){
+        if(S.studies[i].cat===cat){
+          S.studies.splice(idx,1);S.studies.splice(i,0,s);
+          persist();return;
+        }
+      }
+    });
+  });
+  document.querySelectorAll('[data-smdn]').forEach(function(el){
+    el.addEventListener('click',function(){
+      var sid=el.dataset.smdn;
+      var s=S.studies.filter(function(x){return x.id===sid;})[0];if(!s)return;
+      var cat=s.cat;
+      var idx=S.studies.indexOf(s);
+      // 같은 카테고리 안에서 아래로
+      for(var i=idx+1;i<S.studies.length;i++){
+        if(S.studies[i].cat===cat){
+          S.studies.splice(idx,1);S.studies.splice(i,0,s);
+          persist();return;
+        }
+      }
     });
   });
 
