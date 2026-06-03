@@ -1011,7 +1011,9 @@ function g2(id){return document.getElementById(id);}
 function doAM(){
   var n=S.newMember.trim();
   if(!n||S.members.filter(function(m){return m.name===n;}).length){S.newMember='';render();return;}
-  S.members.push({id:uid(),name:n,pw:'0000',studyIds:[]});S.newMember='';persist();
+  S.members.push({id:uid(),name:n,pw:'0000',studyIds:[]});
+  S.members.sort(function(a,b){return a.name.localeCompare(b.name,'ko');});
+  S.newMember='';persist();
 }
 function doDM(id){
   if(!confirm('이 멤버를 삭제할까요?'))return;
