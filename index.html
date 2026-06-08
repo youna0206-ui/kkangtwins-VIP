@@ -241,7 +241,7 @@ var S={
   isAdmin:false,loggedMember:null,adminErr:'',memberErr:'',selMemId:'',
   newMember:'',expandedMem:null,expandedStudy:null,
   chgErr:'',chgOk:'',viewMemberId:null,
-  settingsTab:'week',expandedWeek:null,
+  settingsTab:'week',expandedWeek:null,expandedCI:null,
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
 };
 
@@ -315,13 +315,25 @@ function rCI(){
   if(!my.length) h+='<div class="empty">참여 스터디 없어요<br><span style="font-size:12px;">📝 스터디 신청 탭에서 신청하세요</span></div>';
   my.forEach(function(s){
     var aw=allWeeks(s);
-    h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);padding:.875rem 1rem;box-shadow:0 2px 8px rgba(233,30,140,.06);margin-bottom:0;">'+
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">'+
+    var isExpCI=S.expandedCI===s.id;
+    var ss=sMSt(s,m);
+    h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);box-shadow:0 2px 8px rgba(233,30,140,.06);margin-bottom:0;overflow:hidden;">';
+    // 스터디 헤더 (클릭하면 열고 닫기)
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:.875rem 1rem;cursor:pointer;" data-expci="'+s.id+'">'+
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+
         '<span style="font-size:14px;font-weight:700;">'+esc(s.name)+'</span>'+
-        (s.dayOfWeek?'<span style="font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:3px 9px;border-radius:20px;box-shadow:0 2px 6px rgba(233,30,140,.3);">📅 '+esc(s.dayOfWeek)+'요일</span>':'')+
-      '</div>';
-    if(!aw.length) h+='<div style="font-size:12px;color:var(--mu);">주차가 없어요</div>';
-    aw.forEach(function(w){
+        (s.dayOfWeek?'<span style="font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:3px 9px;border-radius:20px;">📅 '+esc(s.dayOfWeek)+'요일</span>':'')+
+      '</div>'+
+      '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'+
+        '<span style="font-size:11px;color:var(--mu);">'+ss.dn+'/'+ss.t+'주</span>'+
+        '<span style="font-size:13px;font-weight:700;color:'+(ss.pct===100?'var(--gr)':'var(--pr)')+';">'+ss.pct+'%</span>'+
+        '<span style="font-size:13px;color:var(--mu);">'+(isExpCI?'▲':'▼')+'</span>'+
+      '</div>'+
+    '</div>';
+    if(isExpCI){
+      h+='<div style="padding:0 1rem .875rem;">';
+      if(!aw.length) h+='<div style="font-size:12px;color:var(--mu);">주차가 없어요</div>';
+      aw.forEach(function(w){
       var status=ck(s.id,w.num,m.id);var isOpen=!w.locked;
       // 자료 잠금 해제 조건: 1주차는 항상, N주차는 N-1주차 인증 완료시
       var prevW=aw.filter(function(x){return x.num===w.num-1;})[0];
@@ -348,8 +360,10 @@ function rCI(){
         }
       }
       h+='</div>';
-    });
-    h+='</div></div>';
+      });
+      h+='</div>'; // close inner padding
+    } // close isExpCI
+    h+='</div>'; // close study card
   });
   if(S.saving) h+='<div style="text-align:center;font-size:13px;color:var(--mu);">저장 중...</div>';
   return h+'</div>';
@@ -755,6 +769,10 @@ function bAll(){
     else{S.adminErr='비밀번호가 틀렸어요';render();}
   });
   // 인증버튼
+  // 내 인증 스터디 펼치기/접기
+  qsa('[data-expci]',function(el){el.addEventListener('click',function(){
+    S.expandedCI=S.expandedCI===el.dataset.expci?null:el.dataset.expci;render();
+  });});
   qsa('[data-ck]',function(el){el.addEventListener('click',function(){
     var p=el.dataset.ck.split('__');var mid=p[0],sid=p[1],wn=+p[2],val=p[3];
     setCk(sid,wn,mid,ck(sid,wn,mid)===val?null:val);
