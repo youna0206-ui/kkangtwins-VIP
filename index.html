@@ -769,6 +769,10 @@ function bAll(){
     else{S.adminErr='비밀번호가 틀렸어요';render();}
   });
   // 인증버튼
+  // 주차관리 스터디 펼치기/접기
+  qsa('[data-expw]',function(el){el.addEventListener('click',function(){
+    S.expandedWeek=S.expandedWeek===el.dataset.expw?null:el.dataset.expw;render();
+  });});
   // 내 인증 스터디 펼치기/접기
   qsa('[data-expci]',function(el){el.addEventListener('click',function(){
     S.expandedCI=S.expandedCI===el.dataset.expci?null:el.dataset.expci;render();
