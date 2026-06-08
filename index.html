@@ -241,7 +241,7 @@ var S={
   isAdmin:false,loggedMember:null,adminErr:'',memberErr:'',selMemId:'',
   newMember:'',expandedMem:null,expandedStudy:null,
   chgErr:'',chgOk:'',viewMemberId:null,
-  settingsTab:'week',
+  settingsTab:'week',expandedWeek:null,
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
 };
 
@@ -585,8 +585,17 @@ function rST(){
       h+='<div><div class="cat-hd">'+esc(cat)+'</div>';
       cs.forEach(function(s){
         var aw=allWeeks(s);
-        h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--rs);padding:.75rem .875rem;margin-bottom:6px;">'+
-          '<div style="font-size:13px;font-weight:600;margin-bottom:8px;">'+esc(s.name)+'</div>';
+        var isExpW=S.expandedWeek===s.id;
+        h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--rs);margin-bottom:6px;overflow:hidden;">'+
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .875rem;cursor:pointer;" data-expw="'+s.id+'">'+
+            '<span style="font-size:13px;font-weight:600;">'+esc(s.name)+'</span>'+
+            '<div style="display:flex;align-items:center;gap:8px;">'+
+              '<span style="font-size:11px;color:var(--mu);">'+aw.length+'주차</span>'+
+              '<span style="font-size:13px;color:var(--pr);">'+(isExpW?'▲':'▼')+'</span>'+
+            '</div>'+
+          '</div>';
+        if(isExpW){
+        h+='<div style="padding:.5rem .875rem .75rem;">';
         aw.forEach(function(w){
           h+='<div style="background:#FAFAFA;border:1px solid #F3D0E9;border-radius:var(--rs);padding:.5rem .75rem;margin-bottom:6px;">'+
             '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">'+
@@ -605,7 +614,10 @@ function rST(){
           '<input type="number" min="1" max="52" placeholder="예: 8" id="wkin-'+s.id+'" style="width:60px;padding:.3rem .5rem;border-radius:8px;border:1.5px solid var(--br);font-size:13px;">'+
           '<button class="add-wk-btn" data-addwk="'+s.id+'">+ 주차 생성</button>'+
           '<button class="add-wk-btn" style="background:var(--bll);color:var(--bld);border-color:var(--bl);" data-addnext="'+s.id+'">+ 다음 주차</button>'+
-          '</div></div>';
+          '</div>';
+        h+='</div>'; // close inner padding div
+        } // close isExpW
+        h+='</div>'; // close study card
       });
       h+='</div>';
     });
@@ -802,7 +814,7 @@ function bAll(){
     persist();
   });});
   // 설정 서브탭
-  qsa('[data-stab]',function(el){el.addEventListener('click',function(){S.settingsTab=el.dataset.stab;S.expandedMem=null;S.expandedStudy=null;render();});});
+  qsa('[data-stab]',function(el){el.addEventListener('click',function(){S.settingsTab=el.dataset.stab;S.expandedMem=null;S.expandedStudy=null;S.expandedWeek=null;render();});});
   // 주차 관리
   // 자료 링크 저장
   qsa('[data-mat]',function(el){el.addEventListener('blur',function(e){
