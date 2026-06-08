@@ -315,7 +315,10 @@ function rCI(){
   if(!my.length) h+='<div class="empty">참여 스터디 없어요<br><span style="font-size:12px;">📝 스터디 신청 탭에서 신청하세요</span></div>';
   my.forEach(function(s){
     var aw=allWeeks(s);
-    h+='<div class="card" style="padding:.875rem 1rem;"><div style="font-size:14px;font-weight:600;margin-bottom:8px;">'+esc(s.name)+'</div>';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'+
+        '<span style="font-size:14px;font-weight:700;">'+esc(s.name)+'</span>'+
+        (s.dayOfWeek?'<span style="font-size:12px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:4px 10px;border-radius:20px;box-shadow:0 2px 8px rgba(233,30,140,.3);">📅 '+esc(s.dayOfWeek)+'요일</span>':'')+
+      '</div>';
     if(!aw.length) h+='<div style="font-size:12px;color:var(--mu);">주차가 없어요</div>';
     aw.forEach(function(w){
       var status=ck(s.id,w.num,m.id);var isOpen=!w.locked;
