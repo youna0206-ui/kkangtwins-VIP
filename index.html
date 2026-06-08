@@ -315,9 +315,10 @@ function rCI(){
   if(!my.length) h+='<div class="empty">참여 스터디 없어요<br><span style="font-size:12px;">📝 스터디 신청 탭에서 신청하세요</span></div>';
   my.forEach(function(s){
     var aw=allWeeks(s);
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'+
+    h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);padding:.875rem 1rem;box-shadow:0 2px 8px rgba(233,30,140,.06);margin-bottom:0;">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">'+
         '<span style="font-size:14px;font-weight:700;">'+esc(s.name)+'</span>'+
-        (s.dayOfWeek?'<span style="font-size:12px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:4px 10px;border-radius:20px;box-shadow:0 2px 8px rgba(233,30,140,.3);">📅 '+esc(s.dayOfWeek)+'요일</span>':'')+
+        (s.dayOfWeek?'<span style="font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:3px 9px;border-radius:20px;box-shadow:0 2px 6px rgba(233,30,140,.3);">📅 '+esc(s.dayOfWeek)+'요일</span>':'')+
       '</div>';
     if(!aw.length) h+='<div style="font-size:12px;color:var(--mu);">주차가 없어요</div>';
     aw.forEach(function(w){
@@ -332,7 +333,7 @@ function rCI(){
       }
       h+='</div>';
     });
-    h+='</div>';
+    h+='</div></div>';
   });
   if(S.saving) h+='<div style="text-align:center;font-size:13px;color:var(--mu);">저장 중...</div>';
   return h+'</div>';
