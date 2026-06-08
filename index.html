@@ -325,7 +325,9 @@ function rCI(){
       var status=ck(s.id,w.num,m.id);var isOpen=!w.locked;
       // 자료 잠금 해제 조건: 1주차는 항상, N주차는 N-1주차 인증 완료시
       var prevW=aw.filter(function(x){return x.num===w.num-1;})[0];
-      var matUnlocked=w.num===1||(prevW&&ck(s.id,prevW.num,m.id)==='done');
+      // 1주차: 항상 열림 / N주차: 반드시 N-1주차가 'done'(인증완료)이어야만 열림
+      var prevCk=prevW?ck(s.id,prevW.num,m.id):null;
+      var matUnlocked=w.num===1||(prevW!==undefined&&prevCk==='done');
       var hasMat=w.materialUrl&&w.materialUrl.trim()!=='';
       h+='<div style="margin-bottom:8px;">'+
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:'+(hasMat?'5px':'0')+';">'+
@@ -743,7 +745,9 @@ function bAll(){
   // 인증버튼
   qsa('[data-ck]',function(el){el.addEventListener('click',function(){
     var p=el.dataset.ck.split('__');var mid=p[0],sid=p[1],wn=+p[2],val=p[3];
-    setCk(sid,wn,mid,ck(sid,wn,mid)===val?null:val);persist();
+    setCk(sid,wn,mid,ck(sid,wn,mid)===val?null:val);
+    render();  // 즉시 화면 갱신 (자료 잠금/열림 즉시 반영)
+    persist(); // Firebase 저장 (비동기)
   });});
   // 관리자가 멤버 인증 수정
   qsa('[data-ack]',function(el){el.addEventListener('click',function(){
