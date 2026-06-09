@@ -424,7 +424,8 @@ function rApply(){
             ?'<button class="abtn sec" data-cancel-apply="'+s.id+'" style="font-size:12px;padding:5px 12px;">취소</button>'
             :'<button class="abtn" data-do-apply="'+s.id+'" style="font-size:12px;padding:5px 12px;">신청하기</button>')+
         '</div>'+
-        (isApplied?'<div style="font-size:11px;color:var(--gr);font-weight:600;">✅ 신청완료 — 내 인증 탭에서 확인하세요</div>':'')+
+        (isApplied?'<div style="font-size:11px;color:var(--gr);font-weight:600;margin-bottom:6px;">✅ 신청완료 — 내 인증 탭에서 확인하세요</div>':'')+
+        (s.bandUrl?'<a href="'+esc(s.bandUrl)+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#00C73C,#00A032);border-radius:20px;padding:6px 14px;text-decoration:none;box-shadow:0 2px 8px rgba(0,199,60,.3);">🎵 스터디 밴드 바로가기</a>':'')+
       '</div>';
     });
   }
@@ -705,9 +706,15 @@ function rST(){
             '<button class="tgl '+(s.active?'on':'off')+'" data-stg="'+s.id+'" style="margin-right:6px;"></button>'+
             '<button style="font-size:11px;padding:3px 8px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;" data-dels="'+s.id+'">🗑</button>'+
           '</div>'+
-          '<div style="display:flex;align-items:center;gap:8px;padding:.35rem .75rem;background:'+(s.applyOpen?'var(--grb)':'#F9F9F9')+';border-top:1px solid var(--br);">'+
-            '<span style="font-size:12px;font-weight:600;color:'+(s.applyOpen?'var(--gr)':'var(--mu)')+';">'+(s.applyOpen?'📝 신청 열림':'🔒 신청 닫힘')+'</span>'+
-            '<button class="tgl sm '+(s.applyOpen?'on':'off')+'" data-aptg="'+s.id+'" style="margin-left:auto;"></button>'+
+          '<div style="border-top:1px solid var(--br);">'+
+            '<div style="display:flex;align-items:center;gap:8px;padding:.35rem .75rem;background:'+(s.applyOpen?'var(--grb)':'#F9F9F9')+';">'+
+              '<span style="font-size:12px;font-weight:600;color:'+(s.applyOpen?'var(--gr)':'var(--mu)')+';">'+(s.applyOpen?'📝 신청 열림':'🔒 신청 닫힘')+'</span>'+
+              '<button class="tgl sm '+(s.applyOpen?'on':'off')+'" data-aptg="'+s.id+'" style="margin-left:auto;"></button>'+
+            '</div>'+
+            '<div style="display:flex;align-items:center;gap:6px;padding:.35rem .75rem .5rem;background:'+(s.applyOpen?'var(--grb)':'#F9F9F9')+';">'+
+              '<span style="font-size:11px;color:var(--mu);white-space:nowrap;">🔗 밴드 링크:</span>'+
+              '<input type="text" placeholder="밴드 링크 붙여넣기" value="'+esc(s.bandUrl||'')+'" data-band="'+s.id+'" style="flex:1;padding:.3rem .6rem;border-radius:8px;border:1.5px solid var(--br);font-size:12px;background:var(--wh);">'+
+            '</div>'+
           '</div></div>';
       });
       h+='</div>';
@@ -909,6 +916,11 @@ function bAll(){
     var s=S.studies.filter(function(x){return x.id===el.dataset.dow;})[0];
     if(s){s.dayOfWeek=e.target.value;persist();}
   });});
+  // 밴드 링크 저장
+  qsa('[data-band]',function(el){el.addEventListener('blur',function(e){
+    var s=S.studies.filter(function(x){return x.id===el.dataset.band;})[0];
+    if(s){s.bandUrl=e.target.value.trim();persist();}
+  });});
   qsa('[data-aptg]',function(el){el.addEventListener('click',function(){
     var s=S.studies.filter(function(x){return x.id===el.dataset.aptg;})[0];if(s){s.applyOpen=!s.applyOpen;persist();}
   });});
@@ -973,6 +985,7 @@ function applyData(d){
   S.studies.forEach(function(s){
     if(!s.weeks||!s.weeks.length)s.weeks=[{num:1,locked:false}];
     if(s.applyOpen===undefined)s.applyOpen=false;
+    if(s.bandUrl===undefined)s.bandUrl='';
     if(s.dayOfWeek===undefined)s.dayOfWeek='';
     if(s.weeks) s.weeks.forEach(function(w){if(w.materialUrl===undefined)w.materialUrl='';});
   });
