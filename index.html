@@ -95,6 +95,8 @@ select:focus{outline:none;border-color:var(--pr)}
 .stab-btn{flex:0 0 auto;padding:.4rem .875rem;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;border:1.5px solid var(--br);background:var(--wh);color:var(--mu)}
 .stab-btn.on{border-color:var(--pr);background:var(--prl);color:var(--pr);font-weight:700}
 .apply-card{background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);padding:.875rem 1rem}
+.minp-name{font-size:14px;font-weight:500;border:1.5px solid transparent;background:transparent;outline:none;padding:2px 4px;border-radius:4px;color:var(--tx);min-width:0;flex:1;}
+.minp-name:focus{border-color:var(--pr);background:var(--prl);}
 .scard{background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);overflow:hidden;transition:opacity .15s}
 .scard.dragging{opacity:.4}
 .scard.dragover{border-top:3px solid var(--pr)}
@@ -610,7 +612,10 @@ function rST(){
     if(!S.members.length)h+='<div class="empty">멤버가 없어요</div>';
     S.members.forEach(function(m){
       h+='<div><div class="card rb" style="padding:.65rem .875rem;">'+
-        '<div><span style="font-size:14px;font-weight:500;">'+esc(m.name)+'</span><span style="font-size:11px;color:var(--mu);margin-left:6px;">비번:'+esc(m.pw)+'</span></div>'+
+        '<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">'+
+          '<input type="text" value="'+esc(m.name)+'" data-mren="'+m.id+'" class="minp-name">'+
+          '<span style="font-size:11px;color:var(--mu);white-space:nowrap;">비번:'+esc(m.pw)+'</span>'+
+        '</div>'+
         '<div style="display:flex;gap:6px;align-items:center;"><span style="font-size:12px;color:var(--mu);">'+(m.studyIds||[]).length+'개</span>'+
         '<button class="actb" data-mexp="'+m.id+'">'+(S.expandedMem===m.id?'닫기':'배정')+'</button>'+
         '<button class="dlb" data-md="'+m.id+'">🗑</button></div></div>';
@@ -835,6 +840,14 @@ function bAll(){
   // 멤버 관리
   var nm=g('nm');if(nm){nm.addEventListener('input',function(e){S.newMember=e.target.value;});nm.addEventListener('keydown',function(e){if(e.key==='Enter')doAM();});}
   on('am',doAM);
+  qsa('[data-mren]',function(el){el.addEventListener('change',function(e){
+    var newName=e.target.value.trim();if(!newName)return;
+    var m=S.members.filter(function(x){return x.id===el.dataset.mren;})[0];if(!m)return;
+    if(S.loggedMember&&S.loggedMember.id===m.id)S.loggedMember.name=newName;
+    m.name=newName;
+    S.members.sort(function(a,b){try{return a.name.localeCompare(b.name,'ko');}catch(e2){return a.name<b.name?-1:1;}});
+    persist();
+  });});
   qsa('[data-mexp]',function(el){el.addEventListener('click',function(){S.expandedMem=S.expandedMem===el.dataset.mexp?null:el.dataset.mexp;render();});});
   qsa('[data-md]',function(el){el.addEventListener('click',function(){doDM(el.dataset.md);});});
   qsa('[data-asgn]',function(el){el.addEventListener('change',function(e){
