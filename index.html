@@ -95,8 +95,6 @@ select:focus{outline:none;border-color:var(--pr)}
 .stab-btn{flex:0 0 auto;padding:.4rem .875rem;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;border:1.5px solid var(--br);background:var(--wh);color:var(--mu)}
 .stab-btn.on{border-color:var(--pr);background:var(--prl);color:var(--pr);font-weight:700}
 .apply-card{background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);padding:.875rem 1rem}
-.minp-name{font-size:14px;font-weight:500;border:1.5px solid transparent;background:transparent;outline:none;padding:2px 4px;border-radius:4px;color:var(--tx);min-width:0;flex:1;}
-.minp-name:focus{border-color:var(--pr);background:var(--prl);}
 .scard{background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);overflow:hidden;transition:opacity .15s}
 .scard.dragging{opacity:.4}
 .scard.dragover{border-top:3px solid var(--pr)}
@@ -107,6 +105,7 @@ select:focus{outline:none;border-color:var(--pr)}
 <body>
 <div class="wrap" id="app"></div>
 <script>
+
 const DEFAULT_MEMBERS=[
   {id:'m01',name:'꼬미맘',pw:'2402',studyIds:[]},{id:'m02',name:'꽁냥맘',pw:'2312',studyIds:[]},
   {id:'m03',name:'누누맘',pw:'2402',studyIds:[]},{id:'m04',name:'다미맘',pw:'2504',studyIds:[]},
@@ -258,52 +257,68 @@ function rCI(){
     '<div style="font-size:12px;color:var(--mu);margin-top:2px;">이번주 ✅'+st.done+' / 열린주차 '+st.total+'개</div></div>'+
     '<div style="font-size:20px;font-weight:700;color:'+(st.pct===100?'var(--gr)':'var(--pr)')+';">'+st.pct+'%</div></div>';
   if(!my.length)h+='<div class="empty">참여 스터디 없어요<br><span style="font-size:12px;">📝 스터디 신청 탭에서 신청하세요</span></div>';
-  my.forEach(function(s){
-    var aw=allWeeks(s);var isExpCI=S.expandedCI===s.id;var ss=sMSt(s,m);
-    h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);overflow:hidden;">';
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:.875rem 1rem;cursor:pointer;" data-expci="'+s.id+'">'+
-      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+
-        '<span style="font-size:14px;font-weight:700;">'+esc(s.name)+'</span>'+
-        (s.dayOfWeek?'<span style="font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:3px 9px;border-radius:20px;">📅 '+esc(s.dayOfWeek)+'요일</span>':'')+
-      '</div>'+
-      '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'+
-        '<span style="font-size:11px;color:var(--mu);">'+ss.dn+'/'+ss.t+'주</span>'+
-        '<span style="font-size:12px;font-weight:700;color:'+(ss.pct===100?'var(--gr)':'var(--pr)')+';">'+ss.pct+'%</span>'+
-        '<span style="font-size:13px;color:var(--mu);">'+(isExpCI?'▲':'▼')+'</span>'+
-      '</div></div>';
-    if(isExpCI){
-      h+='<div style="padding:0 1rem .875rem;">';
-      if(!aw.length)h+='<div style="font-size:12px;color:var(--mu);">주차가 없어요</div>';
-      aw.forEach(function(w){
-        var status=ck(s.id,w.num,m.id);var isOpen=!w.locked;
-        var prevW=aw.filter(function(x){return x.num===w.num-1;})[0];
-        var prevCk=prevW?ck(s.id,prevW.num,m.id):null;
-        var matUnlocked=w.num===1||(prevW!==undefined&&prevCk==='done');
-        var hasMat=w.materialUrl&&w.materialUrl.trim()!=='';
-        h+='<div style="margin-bottom:8px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:'+(hasMat?'5px':'0')+';">'+
-          '<span class="wk-chip '+(isOpen?'wk-open':'wk-locked')+'">'+(isOpen?'🔓':'🔒')+' '+w.num+'주차</span>';
-        if(isOpen){
-          h+='<button class="sbtn'+(status==='done'?' done':'')+'" data-ck="'+m.id+'__'+s.id+'__'+w.num+'__done">✅ 인증</button>'+
-            '<button class="sbtn'+(status==='vacation'?' vac':'')+'" data-ck="'+m.id+'__'+s.id+'__'+w.num+'__vacation">🏖️ 휴가</button>';
-        } else {
-          h+=(status==='done'?'<span class="bd">✓ 인증완료</span>':status==='vacation'?'<span class="bv">🏖️ 휴가</span>':'<span style="font-size:12px;color:var(--mu);">미인증</span>');
-        }
-        h+='</div>';
-        if(w.note&&w.note.trim()){
-          h+='<div style="font-size:12px;color:var(--tx);background:var(--prl);border-left:3px solid var(--pr);padding:.45rem .75rem;border-radius:0 8px 8px 0;margin-bottom:4px;line-height:1.5;">📢 '+esc(w.note)+'</div>';
-        }
-        if(hasMat){
-          if(matUnlocked){
-            h+='<a href="'+esc(w.materialUrl)+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--bld);background:var(--bll);border:1.5px solid #BFDBFE;border-radius:20px;padding:4px 12px;text-decoration:none;">📚 '+w.num+'주차 자료 보기</a>';
+  // 카테고리별 그룹핑
+  var ciCats=[];
+  my.forEach(function(s){if(ciCats.indexOf(s.cat)<0)ciCats.push(s.cat);});
+  if(S.catOrder&&S.catOrder.length){
+    ciCats.sort(function(a,b){var ia=S.catOrder.indexOf(a),ib=S.catOrder.indexOf(b);if(ia<0)ia=999;if(ib<0)ib=999;return ia-ib;});
+  }
+  ciCats.forEach(function(cat){
+    var catS=my.filter(function(s){return s.cat===cat;});
+    var isCatOpen=S.expandedCat[cat]!==false;
+    h+='<div style="display:flex;align-items:center;gap:6px;padding:.4rem .75rem;cursor:pointer;border-radius:var(--rs);background:var(--bgd);border:1px solid var(--br);" data-cicattog="'+esc(cat)+'">'+
+      '<span style="font-size:12px;font-weight:700;color:var(--pr);flex:1;">'+esc(cat)+'</span>'+
+      '<span style="font-size:11px;color:var(--mu);">'+catS.length+'개</span>'+
+      '<span style="font-size:12px;color:var(--mu);">'+(isCatOpen?'▲':'▼')+'</span>'+
+    '</div>';
+    if(!isCatOpen){return;}
+    catS.forEach(function(s){
+      var aw=allWeeks(s);var isExpCI=S.expandedCI===s.id;var ss=sMSt(s,m);
+      h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);overflow:hidden;margin-left:4px;">';
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:.875rem 1rem;cursor:pointer;" data-expci="'+s.id+'">'+
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+
+          '<span style="font-size:14px;font-weight:700;">'+esc(s.name)+'</span>'+
+          (s.dayOfWeek?'<span style="font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:3px 9px;border-radius:20px;">📅 '+esc(s.dayOfWeek)+'요일</span>':'')+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'+
+          '<span style="font-size:11px;color:var(--mu);">'+ss.dn+'/'+ss.t+'주</span>'+
+          '<span style="font-size:12px;font-weight:700;color:'+(ss.pct===100?'var(--gr)':'var(--pr)')+';">'+ss.pct+'%</span>'+
+          '<span style="font-size:13px;color:var(--mu);">'+(isExpCI?'▲':'▼')+'</span>'+
+        '</div></div>';
+      if(isExpCI){
+        h+='<div style="padding:0 1rem .875rem;">';
+        if(!aw.length)h+='<div style="font-size:12px;color:var(--mu);">주차가 없어요</div>';
+        aw.forEach(function(w){
+          var status=ck(s.id,w.num,m.id);var isOpen=!w.locked;
+          var prevW=aw.filter(function(x){return x.num===w.num-1;})[0];
+          var prevCk=prevW?ck(s.id,prevW.num,m.id):null;
+          var matUnlocked=w.num===1||(prevW!==undefined&&prevCk==='done');
+          var hasMat=w.materialUrl&&w.materialUrl.trim()!=='';
+          h+='<div style="margin-bottom:8px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:'+(hasMat||w.note?'5px':'0')+';">'+
+            '<span class="wk-chip '+(isOpen?'wk-open':'wk-locked')+'">'+(isOpen?'🔓':'🔒')+' '+w.num+'주차</span>';
+          if(isOpen){
+            h+='<button class="sbtn'+(status==='done'?' done':'')+'" data-ck="'+m.id+'__'+s.id+'__'+w.num+'__done">✅ 인증</button>'+
+              '<button class="sbtn'+(status==='vacation'?' vac':'')+'" data-ck="'+m.id+'__'+s.id+'__'+w.num+'__vacation">🏖️ 휴가</button>';
           } else {
-            h+='<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--mu);background:#F3F4F6;border:1.5px solid #E5E7EB;border-radius:20px;padding:4px 12px;">🔒 이전 주차 인증 후 열림</span>';
+            h+=(status==='done'?'<span class="bd">✓ 인증완료</span>':status==='vacation'?'<span class="bv">🏖️ 휴가</span>':'<span style="font-size:12px;color:var(--mu);">미인증</span>');
           }
-        }
+          h+='</div>';
+          if(w.note&&w.note.trim()){
+            h+='<div style="font-size:12px;color:var(--tx);background:var(--prl);border-left:3px solid var(--pr);padding:.45rem .75rem;border-radius:0 8px 8px 0;margin-bottom:4px;line-height:1.6;white-space:pre-wrap;">📢 '+esc(w.note)+'</div>';
+          }
+          if(hasMat){
+            if(matUnlocked){
+              h+='<a href="'+esc(w.materialUrl)+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--bld);background:var(--bll);border:1.5px solid #BFDBFE;border-radius:20px;padding:4px 12px;text-decoration:none;">📚 '+w.num+'주차 자료 보기</a>';
+            } else {
+              h+='<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--mu);background:#F3F4F6;border:1.5px solid #E5E7EB;border-radius:20px;padding:4px 12px;">🔒 이전 주차 인증 후 열림</span>';
+            }
+          }
+          h+='</div>';
+        });
         h+='</div>';
-      });
+      }
       h+='</div>';
-    }
-    h+='</div>';
+    });
   });
   if(S.saving)h+='<div style="text-align:center;font-size:13px;color:var(--mu);">저장 중...</div>';
   return h+'</div>';
@@ -947,6 +962,9 @@ function bAll(){
     else{S.adminErr='비밀번호가 틀렸어요';render();}
   });
   // 내 인증 스터디 접기
+  qsa('[data-cicattog]',function(el){el.addEventListener('click',function(){
+    var c=el.dataset.cicattog;S.expandedCat[c]=S.expandedCat[c]===false?true:false;render();
+  });});
   qsa('[data-expci]',function(el){el.addEventListener('click',function(){S.expandedCI=S.expandedCI===el.dataset.expci?null:el.dataset.expci;render();});});
   // 인증 버튼
   qsa('[data-ck]',function(el){el.addEventListener('click',function(){
@@ -1216,6 +1234,7 @@ function applyData(d){
   try{applyData(await fbLoad());}
   catch(e){S.loading=false;var app=document.getElementById('app');if(app)app.innerHTML='<div class="loading">로드 실패. 새로고침해주세요.</div>';}
 })();
+
 
 </script>
 </body>
