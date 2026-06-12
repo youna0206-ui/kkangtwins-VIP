@@ -872,9 +872,9 @@ function rST(){
                       '<span style="font-size:11px;color:var(--mu);white-space:nowrap;">📎</span>'+
                       '<input type="text" placeholder="Google Drive 링크" value="'+esc(w.materialUrl||'')+'" data-mat="'+s.id+'__'+w.num+'" style="flex:1;padding:.25rem .5rem;border-radius:8px;border:1.5px solid var(--br);font-size:11px;background:var(--wh);">'+
                     '</div>'+
-                    '<div style="display:flex;align-items:center;gap:5px;">'+
-                      '<span style="font-size:11px;color:var(--mu);white-space:nowrap;">📢</span>'+
-                      '<input type="text" placeholder="엄마들에게 공지할 내용" value="'+esc(w.note||'')+'" data-wnote="'+s.id+'__'+w.num+'" style="flex:1;padding:.25rem .5rem;border-radius:8px;border:1.5px solid var(--br);font-size:11px;background:var(--wh);">'+
+                    '<div style="display:flex;gap:5px;">'+
+                      '<span style="font-size:11px;color:var(--mu);white-space:nowrap;padding-top:4px;">📢</span>'+
+                      '<textarea placeholder="엄마들에게 공지할 내용 (엔터로 줄바꿈)" data-wnote="'+s.id+'__'+w.num+'" rows="3" style="flex:1;padding:.35rem .5rem;border-radius:8px;border:1.5px solid var(--br);font-size:11px;background:var(--wh);resize:vertical;font-family:inherit;line-height:1.5;">'+esc(w.note||'')+'</textarea>'+
                     '</div>'+
                   '</div>';
                 }).join('')+
