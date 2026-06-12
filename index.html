@@ -575,7 +575,73 @@ function rOV(){
     }
   }
   var ad=S.members.filter(function(m){var s=mCurSt(m);return s.total>0&&s.done===s.total;}).length;
-  var h='<div class="stack"><div style="display:flex;gap:8px;">'+
+
+  // ── 알림 패널 ──
+  var now=new Date();
+  var todayStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  // 이번주 월요일~일요일
+  var weekDay=now.getDay();var mondayOff=weekDay===0?-6:1-weekDay;
+  var monday=new Date(now);monday.setDate(now.getDate()+mondayOff);
+  var sunday=new Date(monday);sunday.setDate(monday.getDate()+6);
+  function toStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  var monStr=toStr(monday);var sunStr=toStr(sunday);
+
+  // 🔴 열린 주차가 없는 활성 스터디
+  var noOpen=S.studies.filter(function(s){return s.active&&openWeeks(s).length===0;});
+  // 🟡 이번주 인증률 0%인 스터디 (열린 주차 있는데 아무도 인증 안 함)
+  var zeroRate=S.studies.filter(function(s){
+    if(!s.active||openWeeks(s).length===0)return false;
+    var enrolled=S.members.filter(function(m){return(m.studyIds||[]).indexOf(s.id)>=0;});
+    if(!enrolled.length)return false;
+    var total=0,done=0;
+    enrolled.forEach(function(m){openWeeks(s).forEach(function(w){total++;if(ck(s.id,w.num,m.id)==='done')done++;});});
+    return total>0&&done===0;
+  });
+  // 📅 이번주 달력 일정
+  var weekEvs=Object.values(S.events).filter(function(e){
+    var s=e.startDate||e.date;var en=e.endDate||s;
+    return s<=sunStr&&en>=monStr;
+  }).sort(function(a,b){var sa=a.startDate||a.date;var sb=b.startDate||b.date;return sa>sb?1:-1;});
+
+  var hasAlert=noOpen.length||zeroRate.length||weekEvs.length;
+  var h='<div class="stack">';
+  if(hasAlert){
+    h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);padding:.875rem 1rem;">'+
+      '<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:8px;">📋 이번주 할 일</div>';
+    if(noOpen.length){
+      h+='<div style="margin-bottom:8px;"><div style="font-size:12px;font-weight:700;color:var(--rd);margin-bottom:4px;">🔴 주차를 열어야 해요 ('+noOpen.length+'개)</div>';
+      noOpen.forEach(function(s){
+        h+='<div style="font-size:12px;padding:.3rem .5rem;background:#FFF5F5;border-radius:8px;margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;">'+
+          '<span>'+esc(s.name)+'<span style="font-size:10px;color:var(--mu);margin-left:4px;">['+esc(s.cat)+']</span></span>'+
+          '<span style="font-size:10px;color:var(--rd);">열린 주차 없음</span></div>';
+      });
+      h+='</div>';
+    }
+    if(zeroRate.length){
+      h+='<div style="margin-bottom:8px;"><div style="font-size:12px;font-weight:700;color:var(--or);margin-bottom:4px;">🟡 인증 독려 필요 ('+zeroRate.length+'개)</div>';
+      zeroRate.forEach(function(s){
+        var enrolled=S.members.filter(function(m){return(m.studyIds||[]).indexOf(s.id)>=0;});
+        h+='<div style="font-size:12px;padding:.3rem .5rem;background:var(--orb);border-radius:8px;margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;">'+
+          '<span>'+esc(s.name)+'<span style="font-size:10px;color:var(--mu);margin-left:4px;">['+esc(s.cat)+']</span></span>'+
+          '<span style="font-size:10px;color:var(--or);">'+enrolled.length+'명 0% 인증</span></div>';
+      });
+      h+='</div>';
+    }
+    if(weekEvs.length){
+      h+='<div><div style="font-size:12px;font-weight:700;color:var(--bl);margin-bottom:4px;">📅 이번주 일정 ('+weekEvs.length+'개)</div>';
+      weekEvs.forEach(function(ev){
+        var sd=ev.startDate||ev.date;var ed=ev.endDate||sd;
+        var dateDisplay=sd===ed?sd.slice(5).replace('-','/'):sd.slice(5).replace('-','/')+' ~ '+ed.slice(5).replace('-','/');
+        h+='<div style="font-size:12px;padding:.3rem .5rem;background:var(--bll);border-radius:8px;margin-bottom:3px;display:flex;align-items:center;gap:6px;">'+
+          '<div style="width:8px;height:8px;border-radius:50%;background:'+ev.color+';flex-shrink:0;"></div>'+
+          '<span style="color:var(--mu);white-space:nowrap;">'+dateDisplay+'</span>'+
+          '<span style="font-weight:500;">'+esc(ev.title)+'</span></div>';
+      });
+      h+='</div>';
+    }
+    h+='</div>';
+  }
+  h+='<div style="display:flex;gap:8px;">'+
     '<div class="stat-box"><div class="stat-label">전체 멤버</div><div class="stat-num" style="color:var(--pr);">'+S.members.length+'</div></div>'+
     '<div class="stat-box"><div class="stat-label">✅ 이번주 완료</div><div class="stat-num" style="color:var(--gr);">'+ad+'</div></div>'+
     '<div class="stat-box"><div class="stat-label">⏳ 미완료</div><div class="stat-num" style="color:var(--or);">'+(S.members.length-ad)+'</div></div>'+
