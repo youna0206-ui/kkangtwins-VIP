@@ -191,7 +191,7 @@ var S={
   isAdmin:false,loggedMember:null,adminErr:'',memberErr:'',selMemId:'',
   newMember:'',expandedMem:null,expandedStudy:null,
   chgErr:'',chgOk:'',viewMemberId:null,
-  settingsTab:'study',expandedWeek:null,expandedCI:null,dragSid:null,catOrder:[],expandedCat:{},
+  settingsTab:'study',expandedWeek:null,expandedCI:{},dragSid:null,catOrder:[],expandedCat:{},
   calYear:new Date().getFullYear(),calMonth:new Date().getMonth(),events:{},notices:{},editNoticeId:null,expandedNotice:{},
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
 };
@@ -273,7 +273,7 @@ function rCI(){
     '</div>';
     if(!isCatOpen){return;}
     catS.forEach(function(s){
-      var aw=allWeeks(s);var isExpCI=S.expandedCI===s.id;var ss=sMSt(s,m);
+      var aw=allWeeks(s);var isExpCI=S.expandedCI[s.id]===true;var ss=sMSt(s,m);
       h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);overflow:hidden;margin-left:4px;">';
       h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:.875rem 1rem;cursor:pointer;" data-expci="'+s.id+'">'+
         '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+
@@ -1206,7 +1206,7 @@ function bAll(){
   qsa('[data-cicattog]',function(el){el.addEventListener('click',function(){
     var c=el.dataset.cicattog;S.expandedCat[c]=S.expandedCat[c]===false?true:false;render();
   });});
-  qsa('[data-expci]',function(el){el.addEventListener('click',function(){S.expandedCI=S.expandedCI===el.dataset.expci?null:el.dataset.expci;render();});});
+  qsa('[data-expci]',function(el){el.addEventListener('click',function(e){e.stopPropagation();var id=el.dataset.expci;S.expandedCI[id]=!S.expandedCI[id];render();});});
   // 인증 버튼
   qsa('[data-ck]',function(el){el.addEventListener('click',function(){
     var p=el.dataset.ck.split('__');var mid=p[0],sid=p[1],wn=+p[2],val=p[3];
