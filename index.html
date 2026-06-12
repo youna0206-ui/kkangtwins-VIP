@@ -192,7 +192,7 @@ var S={
   isAdmin:false,loggedMember:null,adminErr:'',memberErr:'',selMemId:'',
   newMember:'',expandedMem:null,expandedStudy:null,
   chgErr:'',chgOk:'',viewMemberId:null,
-  settingsTab:'study',expandedWeek:null,expandedCI:null,dragSid:null,catOrder:[],
+  settingsTab:'study',expandedWeek:null,expandedCI:null,dragSid:null,catOrder:[],expandedCat:{},
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
 };
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -534,13 +534,18 @@ function rST(){
     cats.forEach(function(cat){
       var catStudies=S.studies.filter(function(s){return s.cat===cat;});
       var ci2=cats.indexOf(cat);
+      var isCatOpen=S.expandedCat[cat]!==false;
       h+='<div><div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'+
         '<div style="display:flex;flex-direction:column;gap:2px;">'+
           '<button style="font-size:9px;padding:1px 5px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);" data-catup="'+esc(cat)+'"'+(ci2===0?' disabled':'')+'>▲</button>'+
           '<button style="font-size:9px;padding:1px 5px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);" data-catdn="'+esc(cat)+'"'+(ci2===cats.length-1?' disabled':'')+'>▼</button>'+
         '</div>'+
-        '<span class="cat-hd" style="margin:0;flex:1;">'+esc(cat)+'</span>'+
+        '<div style="display:flex;align-items:center;gap:5px;flex:1;cursor:pointer;" data-cattog="'+esc(cat)+'">'+
+          '<span class="cat-hd" style="margin:0;flex:1;">'+esc(cat)+' <span style="font-size:10px;color:var(--mu);">('+catStudies.length+'개)</span></span>'+
+          '<span style="font-size:13px;color:var(--mu);">'+(isCatOpen?'▲':'▼')+'</span>'+
+        '</div>'+
       '</div>';
+      if(!isCatOpen){h+='</div>';return;}
       catStudies.forEach(function(s,ci){
         var isExpW=S.expandedWeek===s.id;var aw=allWeeks(s);
         var isFirst=ci===0;var isLast=ci===catStudies.length-1;
@@ -747,6 +752,11 @@ function bAll(){
   });});
   // 설정 서브탭
   qsa('[data-stab]',function(el){el.addEventListener('click',function(){S.settingsTab=el.dataset.stab;S.expandedMem=null;S.expandedStudy=null;S.expandedWeek=null;render();});});
+  // 카테고리 접기/펼치기
+  qsa('[data-cattog]',function(el){el.addEventListener('click',function(){
+    var cat=el.dataset.cattog;
+    S.expandedCat[cat]=S.expandedCat[cat]===false?true:false;render();
+  });});
   // 카테고리 순서 ▲▼
   qsa('[data-catup]',function(el){el.addEventListener('click',function(){
     var cat=el.dataset.catup;var idx=S.catOrder.indexOf(cat);
@@ -795,7 +805,15 @@ function bAll(){
   // 삭제
   qsa('[data-dels]',function(el){el.addEventListener('click',function(){
     var s=S.studies.filter(function(x){return x.id===el.dataset.dels;})[0];if(!s)return;
-    if(!confirm('['+s.cat+'] '+s.name+'\n삭제할까요?'))return;
+    // 인증 기록 있는지 확인
+    var ckCount=Object.keys(S.checkins).filter(function(k){return k.indexOf(s.id+'__')===0;}).length;
+    var msg='['+s.cat+'] '+s.name;
+    if(ckCount>0){
+      msg+='\n\n⚠️ 이 스터디에 인증 기록이 '+ckCount+'개 있어요!\n\n삭제하면 인증 기록이 보이지 않게 됩니다.\n기록을 유지하려면 [취소] 후 활성 토글을 꺼주세요.\n\n정말 삭제할까요?';
+    } else {
+      msg+='\n\n삭제할까요?';
+    }
+    if(!confirm(msg))return;
     S.studies=S.studies.filter(function(x){return x.id!==el.dataset.dels;});persist();
   });});
   // 신청 토글
