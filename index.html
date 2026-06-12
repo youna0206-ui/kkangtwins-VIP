@@ -141,7 +141,7 @@ const DEFAULT_MEMBERS=[
   {id:'m63',name:'하연맘',pw:'2504',studyIds:[]},{id:'m64',name:'하진맘',pw:'2309',studyIds:[]},
   {id:'m65',name:'후니맘',pw:'2304',studyIds:[]},{id:'m66',name:'후야맘',pw:'2309',studyIds:[]}
 ];
-function mkS(id,name,cat){return {id:id,name:name,cat:cat,active:true,applyOpen:false,dayOfWeek:'',bandUrl:'',weeks:[{num:1,locked:false,materialUrl:''}]};}
+function mkS(id,name,cat){return {id:id,name:name,cat:cat,active:true,applyOpen:false,dayOfWeek:'',bandUrl:'',snotices:[],weeks:[{num:1,locked:false,materialUrl:''}]};}
 const DEFAULT_STUDIES=[
   mkS('s01','엄세스 슈심송','입문스터디'),mkS('s02','슈심송 플롱1','입문스터디'),
   mkS('s03','베이비마더구스','엄세스'),mkS('s04','프뢰벨마더구스 30','엄세스'),
@@ -192,7 +192,7 @@ var S={
   newMember:'',expandedMem:null,expandedStudy:null,
   chgErr:'',chgOk:'',viewMemberId:null,
   settingsTab:'study',expandedWeek:null,expandedCI:null,dragSid:null,catOrder:[],expandedCat:{},
-  calYear:new Date().getFullYear(),calMonth:new Date().getMonth(),events:{},notices:{},
+  calYear:new Date().getFullYear(),calMonth:new Date().getMonth(),events:{},notices:{},editNoticeId:null,expandedNotice:{},
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
 };
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -287,6 +287,19 @@ function rCI(){
         '</div></div>';
       if(isExpCI){
         h+='<div style="padding:0 1rem .875rem;">';
+        // 스터디 공지 목록
+        if(s.snotices&&s.snotices.length){
+          s.snotices.forEach(function(sn){
+            var snOpen=S.expandedSnotice[sn.id]===true;
+            h+='<div style="border:1.5px solid var(--br);border-radius:var(--rs);margin-bottom:8px;overflow:hidden;">'+
+              '<div style="display:flex;align-items:center;gap:6px;padding:.4rem .75rem;cursor:pointer;background:var(--prl);" data-snttog="'+sn.id+'">'+
+                '<span style="font-size:12px;font-weight:600;color:var(--pr);flex:1;">📢 '+esc(sn.title)+'</span>'+
+                '<span style="font-size:12px;color:var(--mu);">'+(snOpen?'▲':'▼')+'</span>'+
+              '</div>'+
+              (snOpen&&sn.body?'<div style="font-size:13px;padding:.6rem .75rem;line-height:1.6;white-space:pre-wrap;background:var(--wh);">'+esc(sn.body)+'</div>':'')+
+            '</div>';
+          });
+        }
         if(!aw.length)h+='<div style="font-size:12px;color:var(--mu);">주차가 없어요</div>';
         aw.forEach(function(w){
           var status=ck(s.id,w.num,m.id);var isOpen=!w.locked;
@@ -435,17 +448,45 @@ function rNotice(){
     notices.forEach(function(n){
       var dt=new Date(n.createdAt);
       var dtStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+(dt.getDate());
-      h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);overflow:hidden;">'+
-        '<div style="padding:.875rem 1rem;border-bottom:1px solid #F9EDF5;">'+
-          '<div class="rb" style="margin-bottom:4px;">'+
-            '<div style="font-size:15px;font-weight:700;">'+esc(n.title)+'</div>'+
-            (S.isAdmin?'<button style="font-size:11px;padding:2px 8px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;" data-ntdel="'+n.id+'">삭제</button>':'')+
+      var isOpen=S.expandedNotice[n.id]===true;
+      var isEdit=S.editNoticeId===n.id;
+
+      if(isEdit&&S.isAdmin){
+        // 수정 폼
+        h+='<div style="background:var(--wh);border:2px solid var(--pr);border-radius:var(--r);padding:.875rem 1rem;">'+
+          '<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:8px;">✏️ 공지 수정</div>'+
+          '<div style="display:flex;flex-direction:column;gap:8px;">'+
+            '<input type="text" id="nt-edit-title-'+n.id+'" class="ainp" value="'+esc(n.title)+'" style="width:100%">'+
+            '<textarea id="nt-edit-body-'+n.id+'" rows="3" style="width:100%;padding:.65rem .875rem;border-radius:var(--rs);border:1.5px solid var(--br);font-size:14px;resize:vertical;font-family:inherit;">'+esc(n.body||'')+'</textarea>'+
+            '<div style="display:flex;gap:8px;">'+
+              '<button class="abtn" data-ntsave="'+n.id+'" style="flex:1;">저장</button>'+
+              '<button class="abtn sec" data-ntcanceledit="'+n.id+'" style="flex:1;">취소</button>'+
+            '</div>'+
+          '</div></div>';
+      } else {
+        h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);overflow:hidden;">'+
+          // 헤더 (항상 표시)
+          '<div style="display:flex;align-items:center;gap:8px;padding:.75rem 1rem;cursor:pointer;" data-nttog="'+n.id+'">'+
+            '<div style="flex:1;">'+
+              '<div style="font-size:14px;font-weight:700;">'+esc(n.title)+'</div>'+
+              '<div style="font-size:11px;color:var(--mu);">'+dtStr+'</div>'+
+            '</div>'+
+            '<div style="display:flex;align-items:center;gap:6px;">'+
+              (S.isAdmin?'<button style="font-size:11px;padding:2px 7px;border-radius:20px;border:1.5px solid var(--bl);background:var(--bll);color:var(--bld);cursor:pointer;" data-ntedit="'+n.id+'" onclick="event.stopPropagation()">수정</button>':'')+''+
+              (S.isAdmin?'<button style="font-size:11px;padding:2px 7px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;" data-ntdel="'+n.id+'" onclick="event.stopPropagation()">삭제</button>':'')+''+
+              '<span style="font-size:13px;color:var(--mu);">'+(isOpen?'▲':'▼')+'</span>'+
+            '</div>'+
           '</div>'+
-          '<div style="font-size:12px;color:var(--mu);">'+dtStr+'</div>'+
-          (n.body?'<div style="font-size:14px;margin-top:8px;line-height:1.6;white-space:pre-wrap;">'+esc(n.body)+'</div>':'')+
-        '</div>'+
-        (n.imageUrl?'<div style="padding:.75rem 1rem;"><img src="'+esc(n.imageUrl)+'" style="width:100%;border-radius:var(--rs);display:block;" class="notice-img" id="ni-'+n.id+'"></div>':'')+
-      '</div>';
+          // 본문 (펼쳤을 때)
+          (isOpen?
+            '<div style="border-top:1px solid #F9EDF5;">'+
+              (n.body?'<div style="font-size:14px;padding:.75rem 1rem;line-height:1.6;white-space:pre-wrap;">'+esc(n.body)+'</div>':'')+
+              (n.imageUrl?'<div style="padding:.5rem 1rem 1rem;"><img src="'+esc(n.imageUrl)+'" style="width:100%;border-radius:var(--rs);display:block;" class="notice-img"></div>':'')+
+              (!n.body&&!n.imageUrl?'<div style="padding:.75rem 1rem;font-size:13px;color:var(--mu);">내용 없음</div>':'')+
+            '</div>'
+          :'')+
+        '</div>';
+      }
     });
   }
   return h+'</div>';
@@ -854,6 +895,42 @@ function rST(){
             '</div>'+
           '</div>'+
           // 주차 관리
+          // 스터디 공지 관리 섹션
+          '<div style="border-top:1px solid #F3D0E9;">'+
+            '<div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem .75rem;background:#FFF8FE;cursor:pointer;" data-expsn="'+s.id+'">'+
+              '<span style="font-size:12px;color:var(--pr);">📢 스터디 공지</span>'+
+              '<div style="display:flex;align-items:center;gap:6px;">'+
+                '<span style="font-size:11px;color:var(--mu);">'+(s.snotices&&s.snotices.length?s.snotices.length+'개':'없음')+'</span>'+
+                '<span style="font-size:12px;color:var(--mu);">'+(S.expandedWeek==='sn_'+s.id?'▲':'▼')+'</span>'+
+              '</div>'+
+            '</div>'+
+            (S.expandedWeek==='sn_'+s.id?
+              '<div style="padding:.5rem .75rem .75rem;">'+
+                (s.snotices&&s.snotices.length?s.snotices.map(function(sn){
+                  var isEditSn=S.editSnoticeId===sn.id;
+                  if(isEditSn){
+                    return '<div style="background:var(--prl);border:1.5px solid var(--pr);border-radius:var(--rs);padding:.5rem .75rem;margin-bottom:6px;">'+
+                      '<input type="text" id="sn-et-'+sn.id+'" class="ainp" value="'+esc(sn.title)+'" placeholder="공지 제목" style="width:100%;margin-bottom:6px;">'+
+                      '<textarea id="sn-eb-'+sn.id+'" rows="3" style="width:100%;padding:.35rem .5rem;border-radius:8px;border:1.5px solid var(--br);font-size:12px;resize:vertical;font-family:inherit;">'+esc(sn.body||'')+'</textarea>'+
+                      '<div style="display:flex;gap:6px;margin-top:6px;">'+
+                        '<button class="abtn sm" data-snsave="'+s.id+'__'+sn.id+'" style="flex:1;">저장</button>'+
+                        '<button class="abtn sec sm" data-sncedit="'+sn.id+'" style="flex:1;">취소</button>'+
+                      '</div></div>';
+                  }
+                  return '<div style="background:var(--wh);border:1px solid #F3D0E9;border-radius:var(--rs);padding:.4rem .75rem;margin-bottom:5px;display:flex;align-items:center;gap:6px;">'+
+                    '<span style="font-size:12px;font-weight:500;flex:1;">'+esc(sn.title)+'</span>'+
+                    '<button style="font-size:10px;padding:1px 6px;border-radius:20px;border:1.5px solid var(--bl);background:var(--bll);color:var(--bld);cursor:pointer;" data-snedit="'+s.id+'__'+sn.id+'">수정</button>'+
+                    '<button style="font-size:10px;padding:1px 6px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;" data-sndel="'+s.id+'__'+sn.id+'">🗑</button>'+
+                  '</div>';
+                }).join(''):'<div style="font-size:12px;color:var(--mu);">공지 없음</div>')+
+                '<div style="display:flex;gap:6px;margin-top:8px;">'+
+                  '<input type="text" id="sn-new-t-'+s.id+'" class="ainp" placeholder="새 공지 제목" style="flex:1;font-size:12px;padding:.35rem .6rem;">'+
+                  '<button class="add-wk-btn" data-snaddtit="'+s.id+'">+ 추가</button>'+
+                '</div>'+
+              '</div>'
+            :'')+
+          '</div>'+
+          // 주차 관리 섹션
           '<div style="border-top:1px solid #F3D0E9;">'+
             '<div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem .75rem;cursor:pointer;background:#FAFAFA;" data-expw="'+s.id+'">'+
               '<span style="font-size:12px;color:var(--mu);">📅 주차 관리</span>'+
@@ -1019,6 +1096,28 @@ function bAll(){
     if(ntFile)ntFile.value='';
     persist();
   });
+  // 공지 토글
+  qsa('[data-nttog]',function(el){el.addEventListener('click',function(){
+    var id=el.dataset.nttog;S.expandedNotice[id]=!S.expandedNotice[id];render();
+  });});
+  // 공지 수정 버튼
+  qsa('[data-ntedit]',function(el){el.addEventListener('click',function(e){
+    e.stopPropagation();S.editNoticeId=el.dataset.ntedit;render();
+  });});
+  // 수정 취소
+  qsa('[data-ntcanceledit]',function(el){el.addEventListener('click',function(){
+    S.editNoticeId=null;render();
+  });});
+  // 수정 저장
+  qsa('[data-ntsave]',function(el){el.addEventListener('click',function(){
+    var id=el.dataset.ntsave;
+    var ti=document.getElementById('nt-edit-title-'+id);
+    var bo=document.getElementById('nt-edit-body-'+id);
+    if(!ti||!ti.value.trim()){alert('제목을 입력해주세요');return;}
+    var n=S.notices[id];if(!n)return;
+    n.title=ti.value.trim();n.body=bo?bo.value:'';
+    S.editNoticeId=null;S.expandedNotice[id]=true;persist();
+  });});
   qsa('[data-ntdel]',function(el){el.addEventListener('click',function(){
     if(!confirm('이 공지를 삭제할까요?'))return;
     delete S.notices[el.dataset.ntdel];persist();
@@ -1059,6 +1158,46 @@ function bAll(){
   // 내 인증 스터디 접기
   qsa('[data-mpcattog]',function(el){el.addEventListener('click',function(){
     var c=el.dataset.mpcattog;S.expandedCat['mp_'+c]=S.expandedCat['mp_'+c]===false?true:false;render();
+  });});
+  // 스터디 공지 섹션 펼치기 (설정)
+  qsa('[data-expsn]',function(el){el.addEventListener('click',function(){
+    S.expandedWeek=S.expandedWeek==='sn_'+el.dataset.expsn?null:'sn_'+el.dataset.expsn;render();
+  });});
+  // 스터디 공지 추가
+  qsa('[data-snaddtit]',function(el){el.addEventListener('click',function(){
+    var sid=el.dataset.snaddtit;
+    var inp=document.getElementById('sn-new-t-'+sid);
+    var t=inp?inp.value.trim():'';if(!t){alert('제목을 입력해주세요');return;}
+    var s=S.studies.filter(function(x){return x.id===sid;})[0];if(!s)return;
+    if(!s.snotices)s.snotices=[];
+    s.snotices.push({id:'sn'+Date.now().toString(36),title:t,body:'',createdAt:Date.now()});
+    if(inp)inp.value='';persist();
+  });});
+  // 스터디 공지 수정 버튼
+  qsa('[data-snedit]',function(el){el.addEventListener('click',function(){
+    var p=el.dataset.snedit.split('__');S.editSnoticeId=p[1];render();
+  });});
+  // 수정 취소
+  qsa('[data-sncedit]',function(el){el.addEventListener('click',function(){S.editSnoticeId=null;render();});});
+  // 수정 저장
+  qsa('[data-snsave]',function(el){el.addEventListener('click',function(){
+    var p=el.dataset.snsave.split('__');var sid=p[0],snid=p[1];
+    var s=S.studies.filter(function(x){return x.id===sid;})[0];if(!s)return;
+    var sn=s.snotices.filter(function(x){return x.id===snid;})[0];if(!sn)return;
+    var ti=document.getElementById('sn-et-'+snid);var bo=document.getElementById('sn-eb-'+snid);
+    if(ti)sn.title=ti.value.trim()||sn.title;if(bo)sn.body=bo.value;
+    S.editSnoticeId=null;persist();
+  });});
+  // 스터디 공지 삭제
+  qsa('[data-sndel]',function(el){el.addEventListener('click',function(){
+    var p=el.dataset.sndel.split('__');var sid=p[0],snid=p[1];
+    if(!confirm('이 공지를 삭제할까요?'))return;
+    var s=S.studies.filter(function(x){return x.id===sid;})[0];if(!s)return;
+    s.snotices=s.snotices.filter(function(x){return x.id!==snid;});persist();
+  });});
+  // 내 인증 스터디 공지 토글
+  qsa('[data-snttog]',function(el){el.addEventListener('click',function(){
+    var id=el.dataset.snttog;S.expandedSnotice[id]=!S.expandedSnotice[id];render();
   });});
   qsa('[data-cicattog]',function(el){el.addEventListener('click',function(){
     var c=el.dataset.cicattog;S.expandedCat[c]=S.expandedCat[c]===false?true:false;render();
@@ -1314,6 +1453,7 @@ function applyData(d){
     if(s.applyOpen===undefined)s.applyOpen=false;
     if(s.dayOfWeek===undefined)s.dayOfWeek='';
     if(s.bandUrl===undefined)s.bandUrl='';
+    if(!s.snotices)s.snotices=[];
     s.weeks.forEach(function(w){if(w.materialUrl===undefined)w.materialUrl='';if(w.note===undefined)w.note='';});
   });
   // catOrder: Firebase에 저장된 순서 로드, 없으면 studies에서 추출
