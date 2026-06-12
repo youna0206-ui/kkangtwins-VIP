@@ -193,7 +193,7 @@ var S={
   chgErr:'',chgOk:'',viewMemberId:null,
   settingsTab:'study',expandedWeek:null,expandedCI:{},dragSid:null,catOrder:[],expandedCat:{},
   calYear:new Date().getFullYear(),calMonth:new Date().getMonth(),events:{},notices:{},
-  editNoticeId:null,expandedNotice:{},expandedSnotice:{},editSnoticeId:null,editNoticeId:null,expandedNotice:{},
+  editNoticeId:null,expandedNotice:{},expandedSnotice:{},editSnoticeId:null,expandedWnote:{},editNoticeId:null,expandedNotice:{},
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
 };
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -210,6 +210,8 @@ function render(){
 document.addEventListener('click',function(e){
   var expci=e.target.closest&&e.target.closest('[data-expci]');
   if(expci){e.stopPropagation();var id=expci.dataset.expci;S.expandedCI[id]=!S.expandedCI[id];render();return;}
+  var wnttog=e.target.closest&&e.target.closest('[data-wnttog]');
+  if(wnttog){e.stopPropagation();var wk=wnttog.dataset.wnttog;S.expandedWnote[wk]=!S.expandedWnote[wk];render();return;}
 });
 
 function rApp(){
@@ -323,7 +325,15 @@ function rCI(){
           }
           h+='</div>';
           if(w.note&&w.note.trim()){
-            h+='<div style="font-size:12px;color:var(--tx);background:var(--prl);border-left:3px solid var(--pr);padding:.45rem .75rem;border-radius:0 8px 8px 0;margin-bottom:4px;line-height:1.6;white-space:pre-wrap;">📢 '+esc(w.note)+'</div>';
+            var wnKey=s.id+'__'+w.num;var wnOpen=S.expandedWnote[wnKey]===true;
+            var firstLine=w.note.split('\n')[0];
+            h+='<div style="border:1.5px solid var(--br);border-radius:var(--rs);margin-bottom:4px;overflow:hidden;">'+
+              '<div style="display:flex;align-items:center;gap:6px;padding:.35rem .6rem;background:var(--prl);cursor:pointer;" data-wnttog="'+wnKey+'">'+
+                '<span style="font-size:12px;color:var(--pr);font-weight:600;flex:1;">📢 '+esc(firstLine.length>25?firstLine.slice(0,25)+'...':firstLine)+'</span>'+
+                '<span style="font-size:12px;color:var(--mu);">'+(wnOpen?'▲':'▼')+'</span>'+
+              '</div>'+
+              (wnOpen?'<div style="font-size:12px;color:var(--tx);background:var(--wh);padding:.5rem .75rem;line-height:1.6;white-space:pre-wrap;">'+esc(w.note)+'</div>':'')+
+            '</div>';
           }
           if(hasMat){
             if(matUnlocked){
