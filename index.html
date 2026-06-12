@@ -205,6 +205,11 @@ function render(){
   if(S.loading){app.innerHTML='<div class="loading"><div class="sp"></div>불러오는 중...</div>';return;}
   app.innerHTML=rApp();bAll();
 }
+// 앱 레벨 이벤트 위임 (re-render 후에도 항상 동작)
+document.addEventListener('click',function(e){
+  var expci=e.target.closest&&e.target.closest('[data-expci]');
+  if(expci){e.stopPropagation();var id=expci.dataset.expci;S.expandedCI[id]=!S.expandedCI[id];render();return;}
+});
 
 function rApp(){
   var ia=S.isAdmin,im=!!S.loggedMember;
@@ -1206,7 +1211,7 @@ function bAll(){
   qsa('[data-cicattog]',function(el){el.addEventListener('click',function(){
     var c=el.dataset.cicattog;S.expandedCat[c]=S.expandedCat[c]===false?true:false;render();
   });});
-  qsa('[data-expci]',function(el){el.addEventListener('click',function(e){e.stopPropagation();var id=el.dataset.expci;S.expandedCI[id]=!S.expandedCI[id];render();});});
+  // expci handled by app-level delegation});
   // 인증 버튼
   qsa('[data-ck]',function(el){el.addEventListener('click',function(){
     var p=el.dataset.ck.split('__');var mid=p[0],sid=p[1],wn=+p[2],val=p[3];
