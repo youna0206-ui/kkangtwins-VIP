@@ -289,6 +289,9 @@ function rCI(){
           h+=(status==='done'?'<span class="bd">✓ 인증완료</span>':status==='vacation'?'<span class="bv">🏖️ 휴가</span>':'<span style="font-size:12px;color:var(--mu);">미인증</span>');
         }
         h+='</div>';
+        if(w.note&&w.note.trim()){
+          h+='<div style="font-size:12px;color:var(--tx);background:var(--prl);border-left:3px solid var(--pr);padding:.45rem .75rem;border-radius:0 8px 8px 0;margin-bottom:4px;line-height:1.5;">📢 '+esc(w.note)+'</div>';
+        }
         if(hasMat){
           if(matUnlocked){
             h+='<a href="'+esc(w.materialUrl)+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--bld);background:var(--bll);border:1.5px solid #BFDBFE;border-radius:20px;padding:4px 12px;text-decoration:none;">📚 '+w.num+'주차 자료 보기</a>';
@@ -755,9 +758,13 @@ function rST(){
                       '<button class="lock-btn '+(w.locked?'locked':'open')+'" data-lock="'+s.id+'__'+w.num+'">'+(w.locked?'🔒 잠금':'🔓 열림')+'</button>'+
                       '<button style="font-size:11px;padding:2px 7px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;" data-delwk="'+s.id+'__'+w.num+'">🗑</button>'+
                     '</div>'+
-                    '<div style="display:flex;align-items:center;gap:5px;">'+
+                    '<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">'+
                       '<span style="font-size:11px;color:var(--mu);white-space:nowrap;">📎</span>'+
                       '<input type="text" placeholder="Google Drive 링크" value="'+esc(w.materialUrl||'')+'" data-mat="'+s.id+'__'+w.num+'" style="flex:1;padding:.25rem .5rem;border-radius:8px;border:1.5px solid var(--br);font-size:11px;background:var(--wh);">'+
+                    '</div>'+
+                    '<div style="display:flex;align-items:center;gap:5px;">'+
+                      '<span style="font-size:11px;color:var(--mu);white-space:nowrap;">📢</span>'+
+                      '<input type="text" placeholder="엄마들에게 공지할 내용" value="'+esc(w.note||'')+'" data-wnote="'+s.id+'__'+w.num+'" style="flex:1;padding:.25rem .5rem;border-radius:8px;border:1.5px solid var(--br);font-size:11px;background:var(--wh);">'+
                     '</div>'+
                   '</div>';
                 }).join('')+
@@ -1081,6 +1088,13 @@ function bAll(){
     if(!confirm(s.name+' '+wn+'주차 삭제할까요?'))return;
     s.weeks=s.weeks.filter(function(x){return x.num!==wn;});persist();
   });});
+  // 주차 공지 메모
+  qsa('[data-wnote]',function(el){el.addEventListener('blur',function(e){
+    var p=el.dataset.wnote.split('__');var sid=p[0],wn=+p[1];
+    var s=S.studies.filter(function(x){return x.id===sid;})[0];if(!s)return;
+    var w=s.weeks.filter(function(x){return x.num===wn;})[0];if(!w)return;
+    w.note=e.target.value;persist();
+  });});
   // 자료 링크
   qsa('[data-mat]',function(el){el.addEventListener('blur',function(e){
     var p=el.dataset.mat.split('__');var sid=p[0],wn=+p[1];
@@ -1184,7 +1198,7 @@ function applyData(d){
     if(s.applyOpen===undefined)s.applyOpen=false;
     if(s.dayOfWeek===undefined)s.dayOfWeek='';
     if(s.bandUrl===undefined)s.bandUrl='';
-    s.weeks.forEach(function(w){if(w.materialUrl===undefined)w.materialUrl='';});
+    s.weeks.forEach(function(w){if(w.materialUrl===undefined)w.materialUrl='';if(w.note===undefined)w.note='';});
   });
   // catOrder: Firebase에 저장된 순서 로드, 없으면 studies에서 추출
   var allCats=[];S.studies.forEach(function(s){if(allCats.indexOf(s.cat)<0)allCats.push(s.cat);});
