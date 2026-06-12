@@ -192,7 +192,7 @@ var S={
   isAdmin:false,loggedMember:null,adminErr:'',memberErr:'',selMemId:'',
   newMember:'',expandedMem:null,expandedStudy:null,
   chgErr:'',chgOk:'',viewMemberId:null,
-  settingsTab:'study',expandedWeek:null,expandedCI:null,dragSid:null,
+  settingsTab:'study',expandedWeek:null,expandedCI:null,dragSid:null,catOrder:[],
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
 };
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -505,7 +505,10 @@ function xCopy(){
 
 function rST(){
   if(!S.isAdmin) return rAL();
-  var cats=[];S.studies.forEach(function(s){if(cats.indexOf(s.cat)<0)cats.push(s.cat);});
+  // cats는 S.catOrder 기반 (페이지 로드 후에는 catOrder 사용)
+  var allStudyCats=[];S.studies.forEach(function(s){if(allStudyCats.indexOf(s.cat)<0)allStudyCats.push(s.cat);});
+  var cats=S.catOrder.filter(function(c){return allStudyCats.indexOf(c)>=0;});
+  allStudyCats.forEach(function(c){if(cats.indexOf(c)<0)cats.push(c);});
   var subtabs=[['study','📚 스터디 관리'],['member','👥 멤버관리'],['studymem','🔗 스터디별 멤버']];
   var h='<div class="stack" style="gap:12px;"><div style="display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;">';
   subtabs.forEach(function(t){h+='<button class="stab-btn'+(S.settingsTab===t[0]?' on':'')+'" data-stab="'+t[0]+'">'+t[1]+'</button>';});
@@ -530,7 +533,14 @@ function rST(){
 
     cats.forEach(function(cat){
       var catStudies=S.studies.filter(function(s){return s.cat===cat;});
-      h+='<div><div class="cat-hd">'+esc(cat)+'</div>';
+      var ci2=cats.indexOf(cat);
+      h+='<div><div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'+
+        '<div style="display:flex;flex-direction:column;gap:2px;">'+
+          '<button style="font-size:9px;padding:1px 5px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);" data-catup="'+esc(cat)+'"'+(ci2===0?' disabled':'')+'>▲</button>'+
+          '<button style="font-size:9px;padding:1px 5px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);" data-catdn="'+esc(cat)+'"'+(ci2===cats.length-1?' disabled':'')+'>▼</button>'+
+        '</div>'+
+        '<span class="cat-hd" style="margin:0;flex:1;">'+esc(cat)+'</span>'+
+      '</div>';
       catStudies.forEach(function(s,ci){
         var isExpW=S.expandedWeek===s.id;var aw=allWeeks(s);
         var isFirst=ci===0;var isLast=ci===catStudies.length-1;
@@ -737,6 +747,15 @@ function bAll(){
   });});
   // 설정 서브탭
   qsa('[data-stab]',function(el){el.addEventListener('click',function(){S.settingsTab=el.dataset.stab;S.expandedMem=null;S.expandedStudy=null;S.expandedWeek=null;render();});});
+  // 카테고리 순서 ▲▼
+  qsa('[data-catup]',function(el){el.addEventListener('click',function(){
+    var cat=el.dataset.catup;var idx=S.catOrder.indexOf(cat);
+    if(idx>0){S.catOrder.splice(idx,1);S.catOrder.splice(idx-1,0,cat);persist();}
+  });});
+  qsa('[data-catdn]',function(el){el.addEventListener('click',function(){
+    var cat=el.dataset.catdn;var idx=S.catOrder.indexOf(cat);
+    if(idx<S.catOrder.length-1){S.catOrder.splice(idx,1);S.catOrder.splice(idx+1,0,cat);persist();}
+  });});
   // 스터디 순서 ▲▼
   qsa('[data-sup]',function(el){el.addEventListener('click',function(){
     var s=S.studies.filter(function(x){return x.id===el.dataset.sup;})[0];if(!s)return;
@@ -838,6 +857,7 @@ function bAll(){
     if(!cat){alert('카테고리를 선택하거나 입력해주세요');return;}
     if(S.studies.filter(function(x){return x.name===name;}).length){alert('같은 이름이 이미 있어요!');return;}
     S.studies.push({id:'s'+Date.now().toString(36),name:name,cat:cat,active:true,applyOpen:false,dayOfWeek:'',bandUrl:'',weeks:[{num:1,locked:false,materialUrl:''}]});
+    if(S.catOrder.indexOf(cat)<0)S.catOrder.push(cat);
     if(ni)ni.value='';if(ci)ci.value='';if(nci){nci.value='';nci.style.display='none';}persist();
   });
   // 멤버 관리
@@ -887,7 +907,7 @@ function doDM(id){
 }
 async function persist(){
   S.saving=true;render();
-  try{await fbSave({studies:S.studies,members:S.members,checkins:S.checkins});}
+  try{await fbSave({studies:S.studies,members:S.members,checkins:S.checkins,catOrder:S.catOrder});}
   catch(e){alert('저장 실패. 인터넷 연결을 확인해주세요.');}
   S.saving=false;render();
 }
@@ -907,6 +927,12 @@ function applyData(d){
     if(s.bandUrl===undefined)s.bandUrl='';
     s.weeks.forEach(function(w){if(w.materialUrl===undefined)w.materialUrl='';});
   });
+  // catOrder: Firebase에 저장된 순서 로드, 없으면 studies에서 추출
+  var allCats=[];S.studies.forEach(function(s){if(allCats.indexOf(s.cat)<0)allCats.push(s.cat);});
+  var savedOrder=d&&d.catOrder&&d.catOrder.length?d.catOrder:[];
+  // 저장된 순서 기준으로 정렬, 새 카테고리는 맨 뒤에 추가
+  S.catOrder=savedOrder.filter(function(c){return allCats.indexOf(c)>=0;});
+  allCats.forEach(function(c){if(S.catOrder.indexOf(c)<0)S.catOrder.push(c);});
   S.members.sort(function(a,b){try{return a.name.localeCompare(b.name,'ko');}catch(e){return a.name<b.name?-1:a.name>b.name?1:0;}});
   S.loading=false;render();
 }
