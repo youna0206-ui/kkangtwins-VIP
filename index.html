@@ -428,8 +428,14 @@ function rCal(){
     h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);padding:.875rem 1rem;">'+
       '<div style="font-size:13px;font-weight:600;color:var(--pr);margin-bottom:8px;">+ 일정 추가</div>'+
       '<div style="display:flex;flex-direction:column;gap:8px;">'+
-        '<input type="date" id="ev-date" class="ainp" style="width:100%;">'+
-        '<input type="text" id="ev-title" class="ainp" placeholder="일정 제목 (예: 베이비마더구스 3주차 시작)" style="width:100%;">'+
+        '<input type="text" id="ev-title" class="ainp" placeholder="일정 제목" style="width:100%;">'+
+        '<div style="display:flex;gap:8px;align-items:center;">'+
+          '<div style="flex:1;"><div style="font-size:11px;color:var(--mu);margin-bottom:3px;">시작일</div>'+
+          '<input type="date" id="ev-start" class="ainp" style="width:100%;padding:.5rem .75rem;font-size:13px;"></div>'+
+          '<div style="font-size:16px;color:var(--mu);margin-top:18px;">~</div>'+
+          '<div style="flex:1;"><div style="font-size:11px;color:var(--mu);margin-bottom:3px;">종료일 <span style="color:var(--or);">(하루면 비워두기)</span></div>'+
+          '<input type="date" id="ev-end" class="ainp" style="width:100%;padding:.5rem .75rem;font-size:13px;"></div>'+
+        '</div>'+
         '<div style="display:flex;gap:8px;">'+
           '<select id="ev-color" style="flex:1;padding:.6rem .75rem;border-radius:var(--rs);border:1.5px solid var(--br);font-size:13px;background:var(--wh);margin:0;">'+
             '<option value="#E91E8C">🩷 분홍</option>'+
@@ -456,15 +462,22 @@ function rCal(){
   for(var i=0;i<firstDay;i++) h+='<div style="min-height:60px;border-top:1px solid #F9EDF5;"></div>';
   for(var d=1;d<=lastDate;d++){
     var dateStr=yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    var dayEvs=Object.values(S.events).filter(function(e){return e.date===dateStr;});
+    var dayEvs=Object.values(S.events).filter(function(e){
+      var s=e.startDate||e.date;var en=e.endDate||s;
+      return dateStr>=s&&dateStr<=en;
+    });
     var isToday=dateStr===todayStr;
     var dow=(firstDay+d-1)%7;
     h+='<div style="min-height:60px;border-top:1px solid #F9EDF5;padding:3px;'+(isToday?'background:var(--prl);':'')+'">'+
       '<div style="font-size:12px;font-weight:'+(isToday?'700':'400')+';color:'+(isToday?'var(--pr)':dow===0?'var(--rd)':dow===6?'var(--bl)':'var(--tx)')+';margin-bottom:2px;">'+d+'</div>';
     dayEvs.forEach(function(ev){
-      h+='<div style="font-size:10px;font-weight:600;color:#fff;background:'+ev.color+';border-radius:4px;padding:1px 4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+esc(ev.title)+'">'+
-        esc(ev.title.length>8?ev.title.slice(0,8)+'...':ev.title)+
-        (S.isAdmin?'<span class="ev-del" data-evid="'+ev.id+'" style="float:right;cursor:pointer;opacity:.7;margin-left:2px;">✕</span>':'')+
+      var s=ev.startDate||ev.date;var en=ev.endDate||s;
+      var isStart=dateStr===s;var isEnd=dateStr===en;var isSingle=s===en;
+      var br=isSingle?'4px':(isStart?'4px 0 0 4px':(isEnd?'0 4px 4px 0':'0'));
+      var label=isStart?esc(ev.title.length>8?ev.title.slice(0,8)+'...':ev.title):'';
+      h+='<div style="font-size:10px;font-weight:600;color:#fff;background:'+ev.color+';border-radius:'+br+';padding:1px 4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:'+(isStart?1:0.75)+';" title="'+esc(ev.title)+'">'+
+        label+
+        (S.isAdmin&&(isStart||isSingle)?'<span class="ev-del" data-evid="'+ev.id+'" style="float:right;cursor:pointer;opacity:.7;margin-left:2px;">✕</span>':'')+
       '</div>';
     });
     h+='</div>';
@@ -472,18 +485,22 @@ function rCal(){
   h+='</div></div>';
 
   // 이번달 일정 목록
+  var moPrefix=yr+'-'+String(mo+1).padStart(2,'0');
   var moEvs=Object.values(S.events).filter(function(e){
-    return e.date.startsWith(yr+'-'+String(mo+1).padStart(2,'0'));
-  }).sort(function(a,b){return a.date>b.date?1:-1;});
+    var s=e.startDate||e.date;var en=e.endDate||s;
+    return s.startsWith(moPrefix)||en.startsWith(moPrefix)||(s<moPrefix&&en>moPrefix+'-31');
+  }).sort(function(a,b){var sa=a.startDate||a.date;var sb=b.startDate||b.date;return sa>sb?1:-1;});
   if(moEvs.length){
     h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);padding:.875rem 1rem;">'+
       '<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:8px;">이번 달 일정</div>';
     moEvs.forEach(function(ev){
-      var d=new Date(ev.date);var dow2=d.getDay();
+      var sd=ev.startDate||ev.date;var ed=ev.endDate||sd;
+      var d1=new Date(sd);var dow2=d1.getDay();
       var dowName=['일','월','화','수','목','금','토'][dow2];
+      var dateDisplay=sd===ed?sd.slice(5).replace('-','/')+'('+dowName+')':sd.slice(5).replace('-','/') + ' ~ ' + ed.slice(5).replace('-','/');
       h+='<div style="display:flex;align-items:center;gap:8px;padding:.4rem 0;border-bottom:1px solid #F9EDF5;">'+
         '<div style="width:10px;height:10px;border-radius:50%;background:'+ev.color+';flex-shrink:0;"></div>'+
-        '<span style="font-size:12px;color:var(--mu);white-space:nowrap;">'+ev.date.slice(5).replace('-','/')+'('+dowName+')</span>'+
+        '<span style="font-size:12px;color:var(--mu);white-space:nowrap;">'+dateDisplay+'</span>'+
         '<span style="font-size:13px;font-weight:500;flex:1;">'+esc(ev.title)+'</span>'+
         (S.isAdmin?'<button class="ev-del" data-evid="'+ev.id+'" style="font-size:11px;padding:2px 6px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;">삭제</button>':'')+
       '</div>';
@@ -894,12 +911,14 @@ function bAll(){
   on('cal-next',function(){S.calMonth++;if(S.calMonth>11){S.calMonth=0;S.calYear++;}render();});
   // 일정 추가
   on('ev-add',function(){
-    var dt=g('ev-date');var tl=g('ev-title');var cl=g('ev-color');
-    if(!dt||!dt.value){alert('날짜를 선택해주세요');return;}
+    var st=g('ev-start');var en=g('ev-end');var tl=g('ev-title');var cl=g('ev-color');
+    if(!st||!st.value){alert('시작일을 선택해주세요');return;}
     if(!tl||!tl.value.trim()){alert('제목을 입력해주세요');return;}
+    var endVal=en&&en.value?en.value:st.value;
+    if(endVal<st.value){alert('종료일이 시작일보다 빠를 수 없어요');return;}
     var id='ev'+Date.now().toString(36);
-    S.events[id]={id:id,date:dt.value,title:tl.value.trim(),color:cl?cl.value:'#E91E8C'};
-    tl.value='';persist();
+    S.events[id]={id:id,startDate:st.value,endDate:endVal,date:st.value,title:tl.value.trim(),color:cl?cl.value:'#E91E8C'};
+    tl.value='';st.value='';if(en)en.value='';persist();
   });
   // 일정 삭제
   qsa('.ev-del',function(el){el.addEventListener('click',function(e){
