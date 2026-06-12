@@ -843,13 +843,14 @@ function rST(){
       var catStudies=S.studies.filter(function(s){return s.cat===cat;});
       var ci2=cats.indexOf(cat);
       var isCatOpen=S.expandedCat[cat]!==false;
-      h+='<div><div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'+
+      h+='<div><div style="display:flex;align-items:center;gap:8px;padding:.5rem .75rem;background:linear-gradient(135deg,var(--prl),#EFF6FF);border-radius:var(--rs);margin-bottom:6px;border:1.5px solid var(--br);">'+
         '<div style="display:flex;flex-direction:column;gap:2px;">'+
-          '<button style="font-size:9px;padding:1px 5px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);" data-catup="'+esc(cat)+'"'+(ci2===0?' disabled':'')+'>▲</button>'+
-          '<button style="font-size:9px;padding:1px 5px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);" data-catdn="'+esc(cat)+'"'+(ci2===cats.length-1?' disabled':'')+'>▼</button>'+
+          '<button style="font-size:9px;padding:1px 5px;border:1px solid var(--br);border-radius:4px;background:rgba(255,255,255,.8);cursor:pointer;color:var(--mu);" data-catup="'+esc(cat)+'"'+(ci2===0?' disabled':'')+'>▲</button>'+
+          '<button style="font-size:9px;padding:1px 5px;border:1px solid var(--br);border-radius:4px;background:rgba(255,255,255,.8);cursor:pointer;color:var(--mu);" data-catdn="'+esc(cat)+'"'+(ci2===cats.length-1?' disabled':'')+'>▼</button>'+
         '</div>'+
-        '<div style="display:flex;align-items:center;gap:5px;flex:1;cursor:pointer;" data-cattog="'+esc(cat)+'">'+
-          '<span class="cat-hd" style="margin:0;flex:1;">'+esc(cat)+' <span style="font-size:10px;color:var(--mu);">('+catStudies.length+'개)</span></span>'+
+        '<div style="display:flex;align-items:center;gap:6px;flex:1;cursor:pointer;" data-cattog="'+esc(cat)+'">'+
+          '<span style="font-size:15px;font-weight:800;color:var(--pr);flex:1;letter-spacing:-.3px;">'+esc(cat)+'</span>'+
+          '<span style="font-size:11px;color:var(--mu);background:rgba(255,255,255,.8);padding:1px 7px;border-radius:20px;border:1px solid var(--br);">'+catStudies.length+'개</span>'+
           '<span style="font-size:13px;color:var(--mu);">'+(isCatOpen?'▲':'▼')+'</span>'+
         '</div>'+
       '</div>';
@@ -923,9 +924,11 @@ function rST(){
                     '<button style="font-size:10px;padding:1px 6px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;" data-sndel="'+s.id+'__'+sn.id+'">🗑</button>'+
                   '</div>';
                 }).join(''):'<div style="font-size:12px;color:var(--mu);">공지 없음</div>')+
-                '<div style="display:flex;gap:6px;margin-top:8px;">'+
-                  '<input type="text" id="sn-new-t-'+s.id+'" class="ainp" placeholder="새 공지 제목" style="flex:1;font-size:12px;padding:.35rem .6rem;">'+
-                  '<button class="add-wk-btn" data-snaddtit="'+s.id+'">+ 추가</button>'+
+                '<div style="background:#F9F9F9;border:1px solid #F3D0E9;border-radius:var(--rs);padding:.6rem .75rem;margin-top:8px;">'+
+                  '<div style="font-size:11px;color:var(--mu);margin-bottom:5px;">새 공지 추가</div>'+
+                  '<input type="text" id="sn-new-t-'+s.id+'" class="ainp" placeholder="공지 제목" style="width:100%;font-size:12px;padding:.35rem .6rem;margin-bottom:5px;">'+
+                  '<textarea id="sn-new-b-'+s.id+'" rows="3" placeholder="공지 내용 (선택, 엔터로 줄바꿈)" style="width:100%;padding:.35rem .5rem;border-radius:8px;border:1.5px solid var(--br);font-size:12px;resize:vertical;font-family:inherit;margin-bottom:5px;"></textarea>'+
+                  '<button class="add-wk-btn" data-snaddtit="'+s.id+'" style="width:100%;text-align:center;">+ 공지 추가</button>'+
                 '</div>'+
               '</div>'
             :'')+
@@ -1167,11 +1170,12 @@ function bAll(){
   qsa('[data-snaddtit]',function(el){el.addEventListener('click',function(){
     var sid=el.dataset.snaddtit;
     var inp=document.getElementById('sn-new-t-'+sid);
+    var inpb=document.getElementById('sn-new-b-'+sid);
     var t=inp?inp.value.trim():'';if(!t){alert('제목을 입력해주세요');return;}
     var s=S.studies.filter(function(x){return x.id===sid;})[0];if(!s)return;
     if(!s.snotices)s.snotices=[];
-    s.snotices.push({id:'sn'+Date.now().toString(36),title:t,body:'',createdAt:Date.now()});
-    if(inp)inp.value='';persist();
+    s.snotices.push({id:'sn'+Date.now().toString(36),title:t,body:inpb?inpb.value.trim():'',createdAt:Date.now()});
+    if(inp)inp.value='';if(inpb)inpb.value='';persist();
   });});
   // 스터디 공지 수정 버튼
   qsa('[data-snedit]',function(el){el.addEventListener('click',function(){
