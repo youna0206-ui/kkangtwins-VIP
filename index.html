@@ -336,20 +336,49 @@ function rMP(){
     '<div class="stat-box"><div class="stat-label">전체 주차</div><div class="stat-num" style="color:var(--mu);">'+tot.tw+'주</div></div>'+
     '</div><div class="pb" style="height:12px;"><div class="pb-f" style="width:'+tot.pct+'%;"></div></div>'+
     '<div style="text-align:right;font-size:12px;color:var(--mu);">누적 인증률 '+tot.pct+'%</div></div>';
-  my.forEach(function(s){
-    var ss=sMSt(s,m);var aw=allWeeks(s);
-    var chips=aw.map(function(w){
-      var wst=ck(s.id,w.num,m.id);
-      var bg=wst==='done'?'var(--grb)':wst==='vacation'?'var(--bll)':'#F3F4F6';
-      var cl=wst==='done'?'#16A34A':wst==='vacation'?'var(--bld)':'var(--mu)';
-      return '<span style="font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;border:1.5px solid '+(w.locked?'#E5E7EB':'var(--pr)')+';background:'+bg+';color:'+cl+';">'+(w.locked?'🔒':'🔓')+w.num+'주</span>';
-    }).join('');
-    h+='<div class="card" style="padding:.875rem 1rem;">'+
-      '<div class="rb" style="margin-bottom:4px;"><span style="font-size:13px;font-weight:600;">'+esc(s.name)+'</span><span class="wbdg">'+ss.dn+'/'+ss.t+'주 '+ss.pct+'%</span></div>'+
-      '<div style="font-size:11px;color:var(--mu);margin-bottom:5px;">'+esc(s.cat)+(s.dayOfWeek?' · '+esc(s.dayOfWeek)+'요일 시작':'')+' · 총 '+ss.t+'주 · 🏖️'+ss.vc+'주</div>'+
-      '<div class="pb"><div class="pb-f" style="width:'+ss.pct+'%;"></div></div>'+
-      '<div style="display:flex;gap:3px;margin-top:8px;flex-wrap:wrap;">'+chips+'</div></div>';
+  // 카테고리별 그룹핑
+  var mpCats=[];
+  my.forEach(function(s){if(mpCats.indexOf(s.cat)<0)mpCats.push(s.cat);});
+  if(S.catOrder&&S.catOrder.length){
+    mpCats.sort(function(a,b){var ia=S.catOrder.indexOf(a),ib=S.catOrder.indexOf(b);if(ia<0)ia=999;if(ib<0)ib=999;return ia-ib;});
+  }
+  mpCats.forEach(function(cat){
+    var catS=my.filter(function(s){return s.cat===cat;});
+    var isCatOpen=S.expandedCat['mp_'+cat]!==false;
+    // 카테고리별 합산
+    var catDn=0,catTw=0;
+    catS.forEach(function(s){var ss=sMSt(s,m);catDn+=ss.dn;catTw+=ss.t;});
+    var catPct=catTw?Math.round(catDn/catTw*100):0;
+    h+='<div style="display:flex;align-items:center;gap:6px;padding:.4rem .75rem;cursor:pointer;border-radius:var(--rs);background:var(--bgd);border:1px solid var(--br);" data-mpcattog="'+esc(cat)+'">'+
+      '<span style="font-size:12px;font-weight:700;color:var(--pr);flex:1;">'+esc(cat)+'</span>'+
+      '<span style="font-size:11px;color:var(--mu);">'+catDn+'/'+catTw+'주</span>'+
+      '<span style="font-size:11px;font-weight:700;color:'+(catPct>=80?'var(--gr)':'var(--pr)')+';margin-left:2px;">'+catPct+'%</span>'+
+      '<span style="font-size:12px;color:var(--mu);margin-left:4px;">'+(isCatOpen?'▲':'▼')+'</span>'+
+    '</div>';
+    if(!isCatOpen){return;}
+    catS.forEach(function(s){
+      var ss=sMSt(s,m);var aw=allWeeks(s);
+      var chips=aw.map(function(w){
+        var wst=ck(s.id,w.num,m.id);
+        var bg=wst==='done'?'var(--grb)':wst==='vacation'?'var(--bll)':'#F3F4F6';
+        var cl=wst==='done'?'#16A34A':wst==='vacation'?'var(--bld)':'var(--mu)';
+        return '<span style="font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;border:1.5px solid '+(w.locked?'#E5E7EB':'var(--pr)')+';background:'+bg+';color:'+cl+';">'+(w.locked?'🔒':'🔓')+w.num+'주</span>';
+      }).join('');
+      h+='<div class="card" style="padding:.875rem 1rem;margin-left:4px;">'+
+        '<div class="rb" style="margin-bottom:4px;">'+
+          '<span style="font-size:13px;font-weight:600;">'+esc(s.name)+'</span>'+
+          '<span class="wbdg">'+ss.dn+'/'+ss.t+'주 '+ss.pct+'%</span>'+
+        '</div>'+
+        '<div style="font-size:11px;color:var(--mu);margin-bottom:5px;">'+
+          (s.dayOfWeek?esc(s.dayOfWeek)+'요일 시작 · ':'')+
+          '총 '+ss.t+'주 · 🏖️'+ss.vc+'주'+
+        '</div>'+
+        '<div class="pb"><div class="pb-f" style="width:'+ss.pct+'%;"></div></div>'+
+        '<div style="display:flex;gap:3px;margin-top:8px;flex-wrap:wrap;">'+chips+'</div>'+
+      '</div>';
+    });
   });
+
   return h+'</div>';
 }
 function rApply(){
@@ -1028,6 +1057,9 @@ function bAll(){
     else{S.adminErr='비밀번호가 틀렸어요';render();}
   });
   // 내 인증 스터디 접기
+  qsa('[data-mpcattog]',function(el){el.addEventListener('click',function(){
+    var c=el.dataset.mpcattog;S.expandedCat['mp_'+c]=S.expandedCat['mp_'+c]===false?true:false;render();
+  });});
   qsa('[data-cicattog]',function(el){el.addEventListener('click',function(){
     var c=el.dataset.cicattog;S.expandedCat[c]=S.expandedCat[c]===false?true:false;render();
   });});
