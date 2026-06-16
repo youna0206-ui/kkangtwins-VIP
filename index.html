@@ -162,8 +162,15 @@ const ADMIN_PW='2323';
 const DB_PATH='/studydata.json';
 const FIREBASE_URL='https://kkang-twins-default-rtdb.firebaseio.com';
 
+const NOTICES_PATH=DB_PATH.replace('.json','_notices.json');
 function fbLoad(){return fetch(FIREBASE_URL+DB_PATH).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){return d||{};});}
 function fbSave(d){return fetch(FIREBASE_URL+DB_PATH,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).then(function(r){if(!r.ok)throw new Error(r.status);});}
+function fbLoadNotices(){
+  return fetch(FIREBASE_URL+NOTICES_PATH).then(function(r){if(!r.ok)return{};return r.json();}).then(function(d){return d||{};}).catch(function(){return{};});
+}
+function fbSaveNotices(d){
+  return fetch(FIREBASE_URL+NOTICES_PATH,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).then(function(r){if(!r.ok)throw new Error(r.status);});
+}
 function ckKey(sid,wn,mid){return sid+'__'+wn+'__'+mid;}
 function ck(sid,wn,mid){return S.checkins[ckKey(sid,wn,mid)]||null;}
 function setCk(sid,wn,mid,val){var k=ckKey(sid,wn,mid);if(val)S.checkins[k]=val;else delete S.checkins[k];}
@@ -1061,12 +1068,15 @@ function bAll(){
     reader.onload=function(e){
       var img=new Image();
       img.onload=function(){
-        var MAX=1200;var w=img.width,h=img.height;
+        var MAX=900;var w=img.width,h=img.height;
         if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
         if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
         var cv=document.createElement('canvas');cv.width=w;cv.height=h;
         var ctx=cv.getContext('2d');ctx.drawImage(img,0,0,w,h);
-        cb(cv.toDataURL('image/jpeg',0.75));
+        var out=cv.toDataURL('image/jpeg',0.6);
+        if(out.length>500000){out=cv.toDataURL('image/jpeg',0.4);}
+        if(out.length>700000){alert('이미지가 너무 커요. 더 작은 이미지를 사용해주세요.');return;}
+        cb(out);
       };
       img.src=e.target.result;
     };
@@ -1113,7 +1123,7 @@ function bAll(){
     var prev=g('nt-preview');var drop=g('nt-drop');
     if(prev)prev.style.display='none';if(drop)drop.style.display='block';
     if(ntFile)ntFile.value='';
-    persist();
+    persistNotices();
   });
   // 공지 토글
   qsa('[data-nttog]',function(el){el.addEventListener('click',function(){
@@ -1135,11 +1145,11 @@ function bAll(){
     if(!ti||!ti.value.trim()){alert('제목을 입력해주세요');return;}
     var n=S.notices[id];if(!n)return;
     n.title=ti.value.trim();n.body=bo?bo.value:'';
-    S.editNoticeId=null;S.expandedNotice[id]=true;persist();
+    S.editNoticeId=null;S.expandedNotice[id]=true;persistNotices();
   });});
   qsa('[data-ntdel]',function(el){el.addEventListener('click',function(){
     if(!confirm('이 공지를 삭제할까요?'))return;
-    delete S.notices[el.dataset.ntdel];persist();
+    delete S.notices[el.dataset.ntdel];persistNotices();
   });});
   // 달력 네비
   on('cal-prev',function(){S.calMonth--;if(S.calMonth<0){S.calMonth=11;S.calYear--;}render();});
@@ -1455,9 +1465,14 @@ function doDM(id){
 }
 async function persist(){
   S.saving=true;render();
-  try{await fbSave({studies:S.studies,members:S.members,checkins:S.checkins,catOrder:S.catOrder,events:S.events,notices:S.notices});}
+  try{await fbSave({studies:S.studies,members:S.members,checkins:S.checkins,catOrder:S.catOrder,events:S.events});}
   catch(e){alert('저장 실패. 인터넷 연결을 확인해주세요.');}
   S.saving=false;render();
+}
+async function persistNotices(){
+  try{await fbSaveNotices(S.notices);}
+  catch(e){alert('공지 저장 실패. 인터넷 연결을 확인해주세요.');}
+  render();
 }
 function applyData(d){
   S.studies=d&&d.studies&&d.studies.length?d.studies:JSON.parse(JSON.stringify(DEFAULT_STUDIES));
@@ -1481,7 +1496,6 @@ function applyData(d){
   var savedOrder=d&&d.catOrder&&d.catOrder.length?d.catOrder:[];
   // 저장된 순서 기준으로 정렬, 새 카테고리는 맨 뒤에 추가
   S.events=d&&d.events?d.events:{};
-  S.notices=d&&d.notices?d.notices:{};
   S.catOrder=savedOrder.filter(function(c){return allCats.indexOf(c)>=0;});
   allCats.forEach(function(c){if(S.catOrder.indexOf(c)<0)S.catOrder.push(c);});
   S.members.sort(function(a,b){try{return a.name.localeCompare(b.name,'ko');}catch(e){return a.name<b.name?-1:a.name>b.name?1:0;}});
@@ -1489,8 +1503,21 @@ function applyData(d){
 }
 (async function(){
   render();
-  try{applyData(await fbLoad());}
-  catch(e){S.loading=false;var app=document.getElementById('app');if(app)app.innerHTML='<div class="loading">로드 실패. 새로고침해주세요.</div>';}
+  var coreData=null;
+  try{coreData=await fbLoad();}
+  catch(e1){
+    // 1회 재시도
+    try{await new Promise(function(r){setTimeout(r,1500);});coreData=await fbLoad();}
+    catch(e2){
+      S.loading=false;
+      var app=document.getElementById('app');
+      if(app)app.innerHTML='<div class="loading">로드 실패. 인터넷 연결을 확인하고 새로고침해주세요.<br><br><button onclick="location.reload()" style="padding:.6rem 1.25rem;border-radius:20px;background:linear-gradient(135deg,#E91E8C,#7B2FF7);color:#fff;border:none;font-weight:700;cursor:pointer;">새로고침</button></div>';
+      return;
+    }
+  }
+  applyData(coreData);
+  // 공지(이미지 포함)는 별도 경로에서 비동기로, 실패해도 앱은 정상 작동
+  fbLoadNotices().then(function(nd){S.notices=nd||{};render();}).catch(function(){S.notices={};});
 })();
 
 
