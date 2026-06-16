@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>데이터 정리 도구</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif}
+  body{background:#FDF5FB;padding:1.5rem;min-height:100vh}
+  .wrap{max-width:480px;margin:0 auto}
+  h1{font-size:18px;margin-bottom:8px;color:#2D2D2D}
+  p{font-size:13px;color:#6B6B6B;line-height:1.6;margin-bottom:1rem}
+  .box{background:#fff;border:1.5px solid #F3D0E9;border-radius:14px;padding:1.25rem;margin-bottom:1rem}
+  select{width:100%;padding:.65rem .875rem;border-radius:10px;border:1.5px solid #F3D0E9;font-size:14px;margin-bottom:1rem;background:#fff}
+  button{width:100%;padding:.875rem;border-radius:14px;background:linear-gradient(135deg,#E91E8C,#7B2FF7);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .log{margin-top:1rem;font-size:13px;line-height:1.8;white-space:pre-wrap;background:#FAFAFA;border-radius:10px;padding:.875rem;min-height:60px;color:#2D2D2D}
+  .ok{color:#16A34A;font-weight:700}
+  .err{color:#EF4444;font-weight:700}
+  .warn{color:#D97706;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧹 데이터 정리 도구</h1>
+  <p>예전에 올렸던 이미지가 포함된 공지가 핵심 데이터에 섞여 있어서 앱이 "로드 실패"가 났을 수 있어요.<br>
+  이 도구는 그 공지 데이터를 <b>안전하게 별도 공간으로 옮기기만</b> 해요. 사진이나 공지 내용은 사라지지 않아요.<br>
+  <b>딱 한 번만</b> 실행하면 돼요.</p>
+
+  <div class="box">
+    <select id="site">
+      <option value="vip">VIP 사이트 (vip.kkangtwins.com)</option>
+      <option value="new">NEW 사이트 (new.kkangtwins.com)</option>
+    </select>
+    <button id="run">정리 시작</button>
+    <div class="log" id="log">대기 중...</div>
+  </div>
+</div>
+
+<script>
+const FIREBASE_URL='https://kkang-twins-default-rtdb.firebaseio.com';
+const PATHS={
+  vip:{core:'/studydata.json', notices:'/studydata_notices.json'},
+  new:{core:'/studydata_new.json', notices:'/studydata_new_notices.json'}
+};
+const logEl=document.getElementById('log');
+function log(msg, cls){
+  var line=document.createElement('div');
+  if(cls) line.className=cls;
+  line.textContent=msg;
+  logEl.appendChild(line);
+}
+function clearLog(){ logEl.innerHTML=''; }
+
+document.getElementById('run').addEventListener('click', async function(){
+  var btn=this;
+  btn.disabled=true;
+  clearLog();
+  var site=document.getElementById('site').value;
+  var p=PATHS[site];
+
+  try{
+    log('1/4 핵심 데이터 불러오는 중...');
+    var coreRes=await fetch(FIREBASE_URL+p.core);
+    if(!coreRes.ok) throw new Error('핵심 데이터 불러오기 실패 (상태코드 '+coreRes.status+')');
+    var coreData=await coreRes.json();
+    if(!coreData){
+      log('핵심 데이터가 비어있어요. 정리할 게 없어요.', 'warn');
+      btn.disabled=false; return;
+    }
+
+    if(!coreData.notices || Object.keys(coreData.notices).length===0){
+      log('이미 정리되어 있어요! notices 데이터가 핵심 경로에 없어요.', 'ok');
+      log('새로고침해서 사이트가 잘 열리는지 확인해보세요.');
+      btn.disabled=false; return;
+    }
+
+    var noticeCount=Object.keys(coreData.notices).length;
+    log('2/4 공지 '+noticeCount+'개 발견! 별도 공간으로 옮기는 중...');
+
+    // 기존 별도 경로에 이미 있는 공지가 있으면 병합 (덮어쓰지 않음)
+    var existingRes=await fetch(FIREBASE_URL+p.notices);
+    var existingNotices=existingRes.ok ? (await existingRes.json() || {}) : {};
+    var merged=Object.assign({}, existingNotices, coreData.notices);
+
+    var saveRes=await fetch(FIREBASE_URL+p.notices,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(merged)
+    });
+    if(!saveRes.ok) throw new Error('공지 데이터 저장 실패 (상태코드 '+saveRes.status+')');
+    log('3/4 저장 완료! 핵심 데이터에서 공지를 제거하는 중...');
+
+    // 핵심 경로에서 notices 키만 제거 (PATCH로 null 지정 = 해당 키 삭제)
+    var patchRes=await fetch(FIREBASE_URL+p.core,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({notices:null})
+    });
+    if(!patchRes.ok) throw new Error('핵심 데이터 정리 실패 (상태코드 '+patchRes.status+')');
+
+    log('4/4 완료! ✅', 'ok');
+    log('공지 '+noticeCount+'개가 안전하게 옮겨졌어요. 사진/내용 그대로 유지됩니다.');
+    log('이제 사이트를 새로고침(Ctrl+Shift+R)해서 확인해보세요!');
+  }catch(e){
+    log('오류 발생: '+e.message, 'err');
+    log('인터넷 연결을 확인하고 다시 시도해주세요.');
+  }
+  btn.disabled=false;
+});
+</script>
+</body>
+</html>
