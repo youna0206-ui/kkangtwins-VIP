@@ -997,7 +997,25 @@ function rST(){
   }
 
   if(S.settingsTab==='member'){
-    h+='<div class="ir"><input type="text" id="nm" placeholder="새 멤버 이름" value="'+esc(S.newMember)+'"><button class="abtn" id="am">+ 추가</button></div><div class="stack">';
+    h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);padding:.875rem 1rem;margin-bottom:10px;">'+
+      '<div style="font-size:13px;font-weight:600;color:var(--pr);margin-bottom:8px;">+ 새 멤버 추가</div>'+
+      '<div style="display:flex;flex-direction:column;gap:8px;">'+
+        '<div style="display:flex;gap:8px;">'+
+          '<input type="text" id="nm" class="ainp" placeholder="이름" value="'+esc(S.newMember)+'" style="flex:2;">'+
+          '<input type="text" id="nm-pw" class="ainp" placeholder="비번 (생년월 4자리)" maxlength="20" style="flex:1;">'+
+        '</div>'+
+        '<div id="nm-study-section">'+
+          '<div style="font-size:11px;color:var(--mu);margin-bottom:4px;">스터디 배정 (선택)</div>'+
+          '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+    S.studies.filter(function(s){return s.active;}).forEach(function(s){
+      h+='<label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 8px;border:1.5px solid var(--br);border-radius:20px;cursor:pointer;background:var(--wh);">'+
+        '<input type="checkbox" class="nm-study-cb" value="'+s.id+'" style="accent-color:var(--pr);">'+
+        esc(s.name)+'</label>';
+    });
+    h+='</div></div>'+
+        '<button class="abtn full" id="am">+ 멤버 추가</button>'+
+      '</div></div>'+
+    '<div class="stack">';
     if(!S.members.length)h+='<div class="empty">멤버가 없어요</div>';
     S.members.forEach(function(m){
       h+='<div><div class="card" style="padding:.65rem .875rem;">'+
@@ -1420,6 +1438,7 @@ function bAll(){
   });
   // 멤버 관리
   var nm=g('nm');if(nm){nm.addEventListener('input',function(e){S.newMember=e.target.value;});nm.addEventListener('keydown',function(e){if(e.key==='Enter')doAM();});}
+  var nmpw=g('nm-pw');if(nmpw)nmpw.addEventListener('keydown',function(e){if(e.key==='Enter')doAM();});
   on('am',doAM);
   qsa('[data-mren]',function(el){el.addEventListener('change',function(e){
     var newName=e.target.value.trim();if(!newName)return;
@@ -1454,9 +1473,15 @@ function bAll(){
   });});
 }
 function doAM(){
-  var n=S.newMember.trim();if(!n||S.members.filter(function(m){return m.name===n;}).length){S.newMember='';render();return;}
-  S.members.push({id:uid(),name:n,pw:'0000',studyIds:[]});
-  S.members.sort(function(a,b){try{return a.name.localeCompare(b.name,'ko');}catch(e){return a.name<b.name?-1:a.name>b.name?1:0;}});S.newMember='';persist();
+  var n=S.newMember.trim();if(!n){render();return;}
+  if(S.members.filter(function(m){return m.name===n;}).length){alert('이미 같은 이름의 멤버가 있어요!');return;}
+  var pwEl=document.getElementById('nm-pw');
+  var pw=pwEl&&pwEl.value.trim()?pwEl.value.trim():'0000';
+  var cbs=document.querySelectorAll('.nm-study-cb:checked');
+  var studyIds=[];cbs.forEach(function(cb){studyIds.push(cb.value);});
+  S.members.push({id:uid(),name:n,pw:pw,studyIds:studyIds});
+  S.members.sort(function(a,b){try{return a.name.localeCompare(b.name,'ko');}catch(e){return a.name<b.name?-1:a.name>b.name?1:0;}});
+  S.newMember='';persist();
 }
 function doDM(id){
   if(!confirm('이 멤버를 삭제할까요?'))return;
