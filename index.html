@@ -339,10 +339,9 @@ function rCI(){
           var matUnlocked=w.num===1||(prevW!==undefined&&prevCk==='done');
           var hasMat=w.materialUrl&&w.materialUrl.trim()!=='';
           h+='<div style="margin-bottom:8px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:'+(hasMat||w.note?'5px':'0')+';">'+
-            '<span '+(isCurWk?'style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:800;color:#fff;background:linear-gradient(135deg,#F59E0B,#EF4444);padding:4px 12px;border-radius:20px;box-shadow:0 2px 8px rgba(245,158,11,.5);"':
-          h+='<span class="wk-chip '+(isOpen?'wk-open':'wk-locked')+(isCurWk?' wk-curweek':'')+'">'+(isCurWk?'⭐ ':'')+(isOpen?'🔓':'🔒')+' '+w.num+'주차'+(isCurWk?' ← 이번주':'')+
+          '<span class="wk-chip '+(isOpen?'wk-open':'wk-locked')+(isCurWk?' wk-curweek':'')+'">'+(isCurWk?'⭐ ':'')+(isOpen?'🔓':'🔒')+' '+w.num+'주차'+(isCurWk?' ← 이번주':'')+
           '</span>';
-          if(isOpen){
+                    if(isOpen){
             h+='<button class="sbtn'+(status==='done'?' done':'')+'" data-ck="'+m.id+'__'+s.id+'__'+w.num+'__done">✅ 인증</button>'+
               '<button class="sbtn'+(status==='vacation'?' vac':'')+'" data-ck="'+m.id+'__'+s.id+'__'+w.num+'__vacation">🏖️ 휴가</button>';
           } else {
