@@ -898,7 +898,7 @@ function rST(){
             // 요일
             '<select data-dow="'+s.id+'" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid var(--br);background:var(--wh);flex-shrink:0;width:58px;">'+
               '<option value="" '+(s.dayOfWeek===''?'selected':'')+'>요일</option>'+
-              ['월','화','수','목','금','토','일'].map(function(d){return '<option value="'+d+'" '+(s.dayOfWeek===d?'selected':'')+'>'+d+'요일</option>';}).join('')+
+              ['월','화','수','목','금','토','일'].map(function(d){return '<option value="'+d+'" '+(s.dayOfWeek===d?'selected':'')+'>'+d+'요일 시작</option>';}).join('')+
             '</select>'+
             // 활성
             '<button class="tgl '+(s.active?'on':'off')+'" data-stg="'+s.id+'" style="flex-shrink:0;"></button>'+
