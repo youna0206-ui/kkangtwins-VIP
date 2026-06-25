@@ -1002,11 +1002,14 @@ function rST(){
                 '<span style="font-size:12px;color:var(--mu);">📅 주차 관리</span>'+
                 '<span style="font-size:12px;color:var(--mu);margin-left:auto;">'+aw.length+'주차 '+(isExpW?'▲':'▼')+'</span>'+
               '</div>'+
-              '<button style="font-size:10px;padding:2px 7px;border-radius:20px;border:1.5px solid var(--gr);background:var(--grb);color:#16A34A;cursor:pointer;white-space:nowrap;font-weight:600;" data-allopen="'+s.id+'">🔓 전체열기</button>'+
-              '<button style="font-size:10px;padding:2px 7px;border-radius:20px;border:1.5px solid #E5E7EB;background:#F3F4F6;color:var(--mu);cursor:pointer;white-space:nowrap;font-weight:600;" data-alllock="'+s.id+'">🔒 전체잠금</button>'+
+
             '</div>'+
             (isExpW?
               '<div style="padding:.5rem .75rem .75rem;">'+
+                '<div style="display:flex;gap:6px;margin-bottom:8px;">'+
+                  '<button style="flex:1;padding:.4rem;border-radius:var(--rs);border:1.5px solid var(--gr);background:var(--grb);color:#16A34A;cursor:pointer;font-size:12px;font-weight:700;" data-allopen="'+s.id+'">🔓 전체 열기</button>'+
+                  '<button style="flex:1;padding:.4rem;border-radius:var(--rs);border:1.5px solid #E5E7EB;background:#F3F4F6;color:var(--mu);cursor:pointer;font-size:12px;font-weight:700;" data-alllock="'+s.id+'">🔒 전체 잠금</button>'+
+                '</div>'+
                 aw.map(function(w){
                   return '<div style="background:#F9F9F9;border:1px solid #F3D0E9;border-radius:var(--rs);padding:.45rem .7rem;margin-bottom:5px;">'+
                     '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'+
@@ -1497,7 +1500,6 @@ function bAll(){
   qsa('[data-alllock]',function(el){el.addEventListener('click',function(){
     var s=S.studies.filter(function(x){return x.id===el.dataset.alllock;})[0];if(!s)return;
     if(!s.weeks||!s.weeks.length){alert('주차가 없어요.');return;}
-    if(!confirm('['+s.name+'] 모든 주차('+s.weeks.length+'개)를 잠금 처리할까요?'))return;
     s.weeks.forEach(function(w){w.locked=true;});persist();
   });});
   // 다음 주차
