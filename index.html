@@ -755,21 +755,29 @@ function rOV(){
     '<div class="stat-box"><div class="stat-label">✅ 이번주 완료</div><div class="stat-num" style="color:var(--gr);">'+ad+'</div></div>'+
     '<div class="stat-box"><div class="stat-label">⏳ 미완료</div><div class="stat-num" style="color:var(--or);">'+(S.members.length-ad)+'</div></div>'+
     '</div>';
-  // 완주 현황 요약
+  // 완주 현황 (카테고리별)
   var completeData=[];
   S.studies.filter(function(s){return s.active;}).forEach(function(s){
     var completers=S.members.filter(function(m){return(m.studyIds||[]).indexOf(s.id)>=0&&isStudyComplete(s,m);});
     if(completers.length>0)completeData.push({study:s,completers:completers});
   });
   if(completeData.length){
+    var completeCats=[];
+    completeData.forEach(function(d){if(completeCats.indexOf(d.study.cat)<0)completeCats.push(d.study.cat);});
     h+='<div style="background:linear-gradient(135deg,#FFFBEB,#FFF7ED);border:1.5px solid #FDE68A;border-radius:var(--r);padding:.875rem 1rem;">'+
-      '<div style="font-size:13px;font-weight:700;color:#D97706;margin-bottom:8px;">🏆 완주 현황</div>';
-    completeData.forEach(function(d){
-      h+='<div style="margin-bottom:6px;">'+
-        '<div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:3px;">'+esc(d.study.name)+' <span style="color:#D97706;">'+d.completers.length+'명 완주</span></div>'+
-        '<div style="display:flex;flex-wrap:wrap;gap:4px;">'+
-        d.completers.map(function(m){return '<span style="font-size:11px;padding:2px 8px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:20px;color:#92400E;">🏆 '+esc(m.name)+'</span>';}).join('')+
-        '</div></div>';
+      '<div style="font-size:13px;font-weight:700;color:#D97706;margin-bottom:10px;">🏆 완주 현황</div>';
+    completeCats.forEach(function(cat){
+      var catData=completeData.filter(function(d){return d.study.cat===cat;});
+      h+='<div style="margin-bottom:10px;">'+
+        '<div style="font-size:11px;font-weight:700;color:#92400E;background:#FEF3C7;padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:6px;">'+esc(cat)+'</div>';
+      catData.forEach(function(d){
+        h+='<div style="margin-bottom:5px;padding:.35rem .5rem;background:rgba(255,255,255,.6);border-radius:var(--rs);">'+
+          '<div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:4px;">'+esc(d.study.name)+' <span style="color:#D97706;font-size:11px;">'+d.completers.length+'명</span></div>'+
+          '<div style="display:flex;flex-wrap:wrap;gap:4px;">'+
+          d.completers.map(function(m){return '<span style="font-size:11px;padding:2px 8px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:20px;color:#92400E;">🏆 '+esc(m.name)+'</span>';}).join('')+
+          '</div></div>';
+      });
+      h+='</div>';
     });
     h+='</div>';
   }
