@@ -233,6 +233,10 @@ document.addEventListener('click',function(e){
   if(expci){e.stopPropagation();var id=expci.dataset.expci;S.expandedCI[id]=!S.expandedCI[id];render();return;}
   var wnttog=e.target.closest&&e.target.closest('[data-wnttog]');
   if(wnttog){e.stopPropagation();var wk=wnttog.dataset.wnttog;S.expandedWnote[wk]=!S.expandedWnote[wk];render();return;}
+  var allopen=e.target.closest&&e.target.closest('[data-allopen]');
+  if(allopen){e.stopPropagation();var s=S.studies.filter(function(x){return x.id===allopen.dataset.allopen;})[0];if(s&&s.weeks){s.weeks.forEach(function(w){w.locked=false;});persist();}return;}
+  var alllock=e.target.closest&&e.target.closest('[data-alllock]');
+  if(alllock){e.stopPropagation();var s2=S.studies.filter(function(x){return x.id===alllock.dataset.alllock;})[0];if(s2&&s2.weeks){s2.weeks.forEach(function(w){w.locked=true;});persist();}return;}
 });
 
 function rApp(){
@@ -1014,13 +1018,15 @@ function rST(){
           '</div>'+
           // 주차 관리 섹션
           '<div style="border-top:1px solid #F3D0E9;">'+
-            '<div style="display:flex;align-items:center;gap:6px;padding:.35rem .75rem;background:#FAFAFA;">'+
-              '<div style="display:flex;align-items:center;gap:4px;flex:1;cursor:pointer;" data-expw="'+s.id+'">'+
-                '<span style="font-size:12px;color:var(--mu);">📅 주차 관리</span>'+
-                '<span style="font-size:12px;color:var(--mu);margin-left:auto;">'+aw.length+'주차 '+(isExpW?'▲':'▼')+'</span>'+
+            '<div style="display:flex;align-items:center;gap:5px;padding:.35rem .75rem;background:#FAFAFA;">'+
+              '<span style="font-size:12px;color:var(--mu);">📅 주차 관리</span>'+
+              '<button class="lock-btn open" data-allopen="'+s.id+'" style="font-size:10px;">🔓 전체열기</button>'+
+              '<button class="lock-btn locked" data-alllock="'+s.id+'" style="font-size:10px;">🔒 전체잠금</button>'+
+              '<div style="flex:1;"></div>'+
+              '<div style="display:flex;align-items:center;gap:4px;cursor:pointer;" data-expw="'+s.id+'">'+
+                '<span style="font-size:12px;color:var(--mu);">'+aw.length+'주차</span>'+
+                '<span style="font-size:12px;color:var(--mu);">'+(isExpW?'▲':'▼')+'</span>'+
               '</div>'+
-              '<button class="lock-btn open" data-allopen="'+s.id+'">🔓 전체열기</button>'+
-              '<button class="lock-btn locked" data-alllock="'+s.id+'">🔒 전체잠금</button>'+
             '</div>'+
             (isExpW?
               '<div style="padding:.5rem .75rem .75rem;">'+
@@ -1505,18 +1511,7 @@ function bAll(){
     s.weeks.sort(function(a,b){return a.num-b.num;});if(inp)inp.value='';
     if(!added)alert('이미 1~'+total+'주차가 모두 있어요!');persist();
   });});
-  // 전체 열기
-  qsa('[data-allopen]',function(el){el.addEventListener('click',function(){
-    var s=S.studies.filter(function(x){return x.id===el.dataset.allopen;})[0];if(!s)return;
-    if(!s.weeks||!s.weeks.length){alert('주차가 없어요. 먼저 주차를 생성해주세요.');return;}
-    s.weeks.forEach(function(w){w.locked=false;});persist();
-  });});
-  // 전체 잠금
-  qsa('[data-alllock]',function(el){el.addEventListener('click',function(){
-    var s=S.studies.filter(function(x){return x.id===el.dataset.alllock;})[0];if(!s)return;
-    if(!s.weeks||!s.weeks.length){alert('주차가 없어요.');return;}
-    s.weeks.forEach(function(w){w.locked=true;});persist();
-  });});
+  // allopen/alllock: 앱 레벨 위임으로 처리
   // 다음 주차
   qsa('[data-addnext]',function(el){el.addEventListener('click',function(){
     var s=S.studies.filter(function(x){return x.id===el.dataset.addnext;})[0];if(!s)return;
