@@ -141,7 +141,7 @@ const DEFAULT_MEMBERS=[
   {id:'m63',name:'하연맘',pw:'2504',studyIds:[]},{id:'m64',name:'하진맘',pw:'2309',studyIds:[]},
   {id:'m65',name:'후니맘',pw:'2304',studyIds:[]},{id:'m66',name:'후야맘',pw:'2309',studyIds:[]}
 ];
-function mkS(id,name,cat){return {id:id,name:name,cat:cat,active:true,applyOpen:false,dayOfWeek:'',bandUrl:'',snotices:[],weeks:[{num:1,locked:false,materialUrl:''}]};}
+function mkS(id,name,cat){return {id:id,name:name,cat:cat,active:true,applyOpen:false,dayOfWeek:'',bandUrl:'',startDate:'',snotices:[],weeks:[{num:1,locked:false,materialUrl:''}]};}
 const DEFAULT_STUDIES=[
   mkS('s01','엄세스 슈심송','입문스터디'),mkS('s02','슈심송 플롱1','입문스터디'),
   mkS('s03','베이비마더구스','엄세스'),mkS('s04','프뢰벨마더구스 30','엄세스'),
@@ -181,6 +181,18 @@ function mCurSt(m){
   var dn=0,tot=0;
   my.forEach(function(s){openWeeks(s).forEach(function(w){tot++;if(ck(s.id,w.num,m.id)==='done')dn++;});});
   return{total:tot,done:dn,pct:tot?Math.round(dn/tot*100):0};
+}
+function getCurrentWeek(s){
+  if(!s.startDate)return 0;
+  var start=new Date(s.startDate);start.setHours(0,0,0,0);
+  var now=new Date();now.setHours(0,0,0,0);
+  var diff=now-start;
+  if(diff<0)return 0;
+  return Math.floor(diff/(7*24*60*60*1000))+1;
+}
+function isStudyComplete(s,m){
+  var aw=allWeeks(s);
+  return aw.length>0&&aw.every(function(w){return ck(s.id,w.num,m.id)==='done';});
 }
 function mTotSt(m){
   var my=S.studies.filter(function(s){return s.active&&(m.studyIds||[]).indexOf(s.id)>=0;});
@@ -294,6 +306,7 @@ function rCI(){
         '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+
           '<span style="font-size:14px;font-weight:700;">'+esc(s.name)+'</span>'+
           (s.dayOfWeek?'<span style="font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:3px 9px;border-radius:20px;">📅 '+esc(s.dayOfWeek)+'요일</span>':'')+
+          (isStudyComplete(s,m)?'<span style="font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,#F59E0B,#EF4444);padding:3px 10px;border-radius:20px;">🏆 완주!</span>':'')+
         '</div>'+
         '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'+
           '<span style="font-size:11px;color:var(--mu);">'+ss.dn+'/'+ss.t+'주</span>'+
@@ -318,12 +331,15 @@ function rCI(){
         if(!aw.length)h+='<div style="font-size:12px;color:var(--mu);">주차가 없어요</div>';
         aw.forEach(function(w){
           var status=ck(s.id,w.num,m.id);var isOpen=!w.locked;
+          var curWk=getCurrentWeek(s);var isCurWk=curWk>0&&w.num===curWk;
           var prevW=aw.filter(function(x){return x.num===w.num-1;})[0];
           var prevCk=prevW?ck(s.id,prevW.num,m.id):null;
           var matUnlocked=w.num===1||(prevW!==undefined&&prevCk==='done');
           var hasMat=w.materialUrl&&w.materialUrl.trim()!=='';
           h+='<div style="margin-bottom:8px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:'+(hasMat||w.note?'5px':'0')+';">'+
-            '<span class="wk-chip '+(isOpen?'wk-open':'wk-locked')+'">'+(isOpen?'🔓':'🔒')+' '+w.num+'주차</span>';
+            '<span class="wk-chip '+(isOpen?'wk-open':'wk-locked')+'"'+(isCurWk?' style="outline:2px solid #F59E0B;outline-offset:1px;font-weight:800;"':'')+'>'+
+            (isCurWk?'⭐ ':'')+(isOpen?'🔓':'🔒')+' '+w.num+'주차'+(isCurWk?' (이번주)':'')+
+          '</span>';
           if(isOpen){
             h+='<button class="sbtn'+(status==='done'?' done':'')+'" data-ck="'+m.id+'__'+s.id+'__'+w.num+'__done">✅ 인증</button>'+
               '<button class="sbtn'+(status==='vacation'?' vac':'')+'" data-ck="'+m.id+'__'+s.id+'__'+w.num+'__vacation">🏖️ 휴가</button>';
@@ -739,13 +755,35 @@ function rOV(){
     '<div class="stat-box"><div class="stat-label">✅ 이번주 완료</div><div class="stat-num" style="color:var(--gr);">'+ad+'</div></div>'+
     '<div class="stat-box"><div class="stat-label">⏳ 미완료</div><div class="stat-num" style="color:var(--or);">'+(S.members.length-ad)+'</div></div>'+
     '</div>';
+  // 완주 현황 요약
+  var completeData=[];
+  S.studies.filter(function(s){return s.active;}).forEach(function(s){
+    var completers=S.members.filter(function(m){return(m.studyIds||[]).indexOf(s.id)>=0&&isStudyComplete(s,m);});
+    if(completers.length>0)completeData.push({study:s,completers:completers});
+  });
+  if(completeData.length){
+    h+='<div style="background:linear-gradient(135deg,#FFFBEB,#FFF7ED);border:1.5px solid #FDE68A;border-radius:var(--r);padding:.875rem 1rem;">'+
+      '<div style="font-size:13px;font-weight:700;color:#D97706;margin-bottom:8px;">🏆 완주 현황</div>';
+    completeData.forEach(function(d){
+      h+='<div style="margin-bottom:6px;">'+
+        '<div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:3px;">'+esc(d.study.name)+' <span style="color:#D97706;">'+d.completers.length+'명 완주</span></div>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:4px;">'+
+        d.completers.map(function(m){return '<span style="font-size:11px;padding:2px 8px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:20px;color:#92400E;">🏆 '+esc(m.name)+'</span>';}).join('')+
+        '</div></div>';
+    });
+    h+='</div>';
+  }
   S.members.forEach(function(m){
     var s=mCurSt(m);var t=mTotSt(m);
+    var completedStudies=S.studies.filter(function(s2){return s2.active&&(m.studyIds||[]).indexOf(s2.id)>=0&&isStudyComplete(s2,m);}).length;
     h+='<div class="mprog" data-vmem="'+m.id+'"><div class="rb"><div style="font-size:14px;font-weight:600;">'+esc(m.name)+' <span style="font-size:11px;color:var(--pr);">→</span></div>'+
       '<div style="display:flex;gap:5px;align-items:center;"><span style="font-size:11px;color:var(--mu);">누적 '+t.dw+'/'+t.tw+'주</span>'+
       '<span style="font-size:12px;font-weight:700;color:'+(t.pct>=80?'var(--gr)':t.pct>=50?'var(--pr)':'var(--or)')+';">'+t.pct+'%</span></div></div>'+
       '<div class="pb" style="height:8px;margin:6px 0 3px;"><div class="pb-f" style="width:'+t.pct+'%;"></div></div>'+
-      '<div style="font-size:11px;color:var(--mu);">이번주 ✅'+s.done+'/'+s.total+'</div></div>';
+      '<div style="display:flex;align-items:center;justify-content:space-between;">'+
+        '<div style="font-size:11px;color:var(--mu);">이번주 ✅'+s.done+'/'+s.total+'</div>'+
+        (completedStudies>0?'<div style="font-size:11px;color:#D97706;font-weight:700;">🏆 완주 '+completedStudies+'개</div>':'')+
+      '</div></div>';
   });
   return h+'</div>';
 }
@@ -840,7 +878,7 @@ function rST(){
   var allStudyCats=[];S.studies.forEach(function(s){if(allStudyCats.indexOf(s.cat)<0)allStudyCats.push(s.cat);});
   var cats=S.catOrder.filter(function(c){return allStudyCats.indexOf(c)>=0;});
   allStudyCats.forEach(function(c){if(cats.indexOf(c)<0)cats.push(c);});
-  var subtabs=[['study','📚 스터디 관리'],['member','👥 멤버관리'],['studymem','🔗 스터디별 멤버']];
+  var subtabs=[['study','📚 스터디 관리'],['member','👥 멤버관리']];
   var h='<div class="stack" style="gap:12px;"><div style="display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;">';
   subtabs.forEach(function(t){h+='<button class="stab-btn'+(S.settingsTab===t[0]?' on':'')+'" data-stab="'+t[0]+'">'+t[1]+'</button>';});
   h+='</div>';
@@ -896,6 +934,7 @@ function rST(){
               cats.map(function(c){return '<option value="'+esc(c)+'"'+(s.cat===c?' selected':'')+'>'+esc(c)+'</option>';}).join('')+
             '</select>'+
             // 요일
+            '<input type="date" value="'+esc(s.startDate||'')+'" data-sdate="'+s.id+'" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid var(--br);background:var(--wh);flex-shrink:0;width:110px;" title="스터디 시작일">'+
             '<select data-dow="'+s.id+'" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid var(--br);background:var(--wh);flex-shrink:0;width:58px;">'+
               '<option value="" '+(s.dayOfWeek===''?'selected':'')+'>요일</option>'+
               ['월','화','수','목','금','토','일'].map(function(d){return '<option value="'+d+'" '+(s.dayOfWeek===d?'selected':'')+'>'+d+'요일 시작</option>';}).join('')+
@@ -958,9 +997,13 @@ function rST(){
           '</div>'+
           // 주차 관리 섹션
           '<div style="border-top:1px solid #F3D0E9;">'+
-            '<div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem .75rem;cursor:pointer;background:#FAFAFA;" data-expw="'+s.id+'">'+
-              '<span style="font-size:12px;color:var(--mu);">📅 주차 관리</span>'+
-              '<span style="font-size:12px;color:var(--mu);">'+aw.length+'주차 '+(isExpW?'▲':'▼')+'</span>'+
+            '<div style="display:flex;align-items:center;gap:6px;padding:.35rem .75rem;background:#FAFAFA;">'+
+              '<div style="display:flex;align-items:center;gap:4px;flex:1;cursor:pointer;" data-expw="'+s.id+'">'+
+                '<span style="font-size:12px;color:var(--mu);">📅 주차 관리</span>'+
+                '<span style="font-size:12px;color:var(--mu);margin-left:auto;">'+aw.length+'주차 '+(isExpW?'▲':'▼')+'</span>'+
+              '</div>'+
+              '<button style="font-size:10px;padding:2px 7px;border-radius:20px;border:1.5px solid var(--gr);background:var(--grb);color:#16A34A;cursor:pointer;white-space:nowrap;font-weight:600;" data-allopen="'+s.id+'">🔓 전체열기</button>'+
+              '<button style="font-size:10px;padding:2px 7px;border-radius:20px;border:1.5px solid #E5E7EB;background:#F3F4F6;color:var(--mu);cursor:pointer;white-space:nowrap;font-weight:600;" data-alllock="'+s.id+'">🔒 전체잠금</button>'+
             '</div>'+
             (isExpW?
               '<div style="padding:.5rem .75rem .75rem;">'+
@@ -987,10 +1030,7 @@ function rST(){
                   '<button class="add-wk-btn" data-addwk="'+s.id+'">+ 일괄생성</button>'+
                   '<button class="add-wk-btn" style="background:var(--bll);color:var(--bld);border-color:var(--bl);" data-addnext="'+s.id+'">+ 다음주차</button>'+
                 '</div>'+
-                '<div style="display:flex;gap:6px;margin-top:6px;">'+
-                  '<button style="flex:1;padding:.4rem;border-radius:var(--rs);border:1.5px solid var(--gr);background:var(--grb);color:#16A34A;cursor:pointer;font-size:12px;font-weight:700;" data-allopen="'+s.id+'">🔓 전체 열기</button>'+
-                  '<button style="flex:1;padding:.4rem;border-radius:var(--rs);border:1.5px solid #E5E7EB;background:#F3F4F6;color:var(--mu);cursor:pointer;font-size:12px;font-weight:700;" data-alllock="'+s.id+'">🔒 전체 잠금</button>'+
-                '</div>'+
+
               '</div>'
             :'')+
           '</div>'+
@@ -1015,7 +1055,7 @@ function rST(){
                   esc(m.name)+'</label>';
               }).join('')+
               '</div>'+
-              '<button style="width:100%;padding:.5rem;border-radius:var(--rs);border:1.5px solid var(--gr);background:var(--grb);color:#16A34A;cursor:pointer;font-size:12px;font-weight:700;" data-allck="'+s.id+'">⚡ 열린 주차 전체 인증완료</button>'+
+
             '</div>'
           :'')+
         '</div>'+
@@ -1368,6 +1408,10 @@ function bAll(){
     if(s&&e.target.value){s.cat=e.target.value;persist();}
   });});
   // 요일
+  qsa('[data-sdate]',function(el){el.addEventListener('change',function(e){
+    var s=S.studies.filter(function(x){return x.id===el.dataset.sdate;})[0];
+    if(s){s.startDate=e.target.value;persist();}
+  });});
   qsa('[data-dow]',function(el){el.addEventListener('change',function(e){
     var s=S.studies.filter(function(x){return x.id===el.dataset.dow;})[0];if(s){s.dayOfWeek=e.target.value;persist();}
   });});
@@ -1572,6 +1616,7 @@ function applyData(d){
     if(s.applyOpen===undefined)s.applyOpen=false;
     if(s.dayOfWeek===undefined)s.dayOfWeek='';
     if(s.bandUrl===undefined)s.bandUrl='';
+    if(s.startDate===undefined)s.startDate='';
     if(!s.snotices)s.snotices=[];
     s.weeks.forEach(function(w){if(w.materialUrl===undefined)w.materialUrl='';if(w.note===undefined)w.note='';});
   });
