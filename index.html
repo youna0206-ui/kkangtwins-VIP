@@ -200,7 +200,7 @@ var S={
   chgErr:'',chgOk:'',viewMemberId:null,
   settingsTab:'study',expandedWeek:null,expandedCI:{},dragSid:null,catOrder:[],expandedCat:{},
   calYear:new Date().getFullYear(),calMonth:new Date().getMonth(),events:{},notices:{},
-  editNoticeId:null,expandedNotice:{},expandedSnotice:{},editSnoticeId:null,expandedWnote:{},editNoticeId:null,expandedNotice:{},
+  editNoticeId:null,expandedNotice:{},expandedSnotice:{},editSnoticeId:null,expandedWnote:{},expandedStudyMem:{},editNoticeId:null,expandedNotice:{},
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
 };
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -987,9 +987,38 @@ function rST(){
                   '<button class="add-wk-btn" data-addwk="'+s.id+'">+ 일괄생성</button>'+
                   '<button class="add-wk-btn" style="background:var(--bll);color:var(--bld);border-color:var(--bl);" data-addnext="'+s.id+'">+ 다음주차</button>'+
                 '</div>'+
+                '<div style="display:flex;gap:6px;margin-top:6px;">'+
+                  '<button style="flex:1;padding:.4rem;border-radius:var(--rs);border:1.5px solid var(--gr);background:var(--grb);color:#16A34A;cursor:pointer;font-size:12px;font-weight:700;" data-allopen="'+s.id+'">🔓 전체 열기</button>'+
+                  '<button style="flex:1;padding:.4rem;border-radius:var(--rs);border:1.5px solid #E5E7EB;background:#F3F4F6;color:var(--mu);cursor:pointer;font-size:12px;font-weight:700;" data-alllock="'+s.id+'">🔒 전체 잠금</button>'+
+                '</div>'+
               '</div>'
             :'')+
           '</div>'+
+        '</div>'+
+        // 멤버 관리 섹션
+        '<div style="border-top:1px solid #F3D0E9;">'+
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem .75rem;cursor:pointer;background:#F0F8FF;" data-expsm="'+s.id+'">'+
+            '<span style="font-size:12px;color:var(--bld);">👥 멤버 관리</span>'+
+            '<div style="display:flex;align-items:center;gap:6px;">'+
+              '<span style="font-size:11px;color:var(--bld);font-weight:700;">'+S.members.filter(function(m){return(m.studyIds||[]).indexOf(s.id)>=0;}).length+'명</span>'+
+              '<span style="font-size:12px;color:var(--mu);">'+(S.expandedStudyMem[s.id]?'▲':'▼')+'</span>'+
+            '</div>'+
+          '</div>'+
+          (S.expandedStudyMem[s.id]?
+            '<div style="padding:.5rem .75rem .75rem;">'+
+              '<div style="font-size:11px;color:var(--mu);margin-bottom:6px;">체크 → 참여 / 해제 → 제외</div>'+
+              '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">'+
+              S.members.map(function(m){
+                var isIn=(m.studyIds||[]).indexOf(s.id)>=0;
+                return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 8px;border:1.5px solid '+(isIn?'var(--pr)':'var(--br)')+';border-radius:20px;cursor:pointer;background:'+(isIn?'var(--prl)':'var(--wh)')+';">'+
+                  '<input type="checkbox" data-sasgn="'+s.id+'__'+m.id+'"'+(isIn?' checked':'')+' style="accent-color:var(--pr);">'+
+                  esc(m.name)+'</label>';
+              }).join('')+
+              '</div>'+
+              '<button style="width:100%;padding:.5rem;border-radius:var(--rs);border:1.5px solid var(--gr);background:var(--grb);color:#16A34A;cursor:pointer;font-size:12px;font-weight:700;" data-allck="'+s.id+'">⚡ 열린 주차 전체 인증완료</button>'+
+            '</div>'
+          :'')+
+        '</div>'+
         '</div>';
       });
       h+='</div>';
@@ -1414,6 +1443,19 @@ function bAll(){
     s.weeks.sort(function(a,b){return a.num-b.num;});if(inp)inp.value='';
     if(!added)alert('이미 1~'+total+'주차가 모두 있어요!');persist();
   });});
+  // 전체 열기
+  qsa('[data-allopen]',function(el){el.addEventListener('click',function(){
+    var s=S.studies.filter(function(x){return x.id===el.dataset.allopen;})[0];if(!s)return;
+    if(!s.weeks||!s.weeks.length){alert('주차가 없어요. 먼저 주차를 생성해주세요.');return;}
+    s.weeks.forEach(function(w){w.locked=false;});persist();
+  });});
+  // 전체 잠금
+  qsa('[data-alllock]',function(el){el.addEventListener('click',function(){
+    var s=S.studies.filter(function(x){return x.id===el.dataset.alllock;})[0];if(!s)return;
+    if(!s.weeks||!s.weeks.length){alert('주차가 없어요.');return;}
+    if(!confirm('['+s.name+'] 모든 주차('+s.weeks.length+'개)를 잠금 처리할까요?'))return;
+    s.weeks.forEach(function(w){w.locked=true;});persist();
+  });});
   // 다음 주차
   qsa('[data-addnext]',function(el){el.addEventListener('click',function(){
     var s=S.studies.filter(function(x){return x.id===el.dataset.addnext;})[0];if(!s)return;
@@ -1464,6 +1506,23 @@ function bAll(){
     m.pw=nv;persist();inp.value='';alert(m.name+'님 비번 변경 완료!');
   });});
   qsa('[data-sexp]',function(el){el.addEventListener('click',function(){S.expandedStudy=S.expandedStudy===el.dataset.sexp?null:el.dataset.sexp;render();});});
+  // 스터디 멤버 섹션 펼치기
+  qsa('[data-expsm]',function(el){el.addEventListener('click',function(){
+    var sid=el.dataset.expsm;S.expandedStudyMem[sid]=!S.expandedStudyMem[sid];render();
+  });});
+  // 전체 인증완료
+  qsa('[data-allck]',function(el){el.addEventListener('click',function(){
+    var sid=el.dataset.allck;
+    var s=S.studies.filter(function(x){return x.id===sid;})[0];if(!s)return;
+    var enrolled=S.members.filter(function(m){return(m.studyIds||[]).indexOf(sid)>=0;});
+    var open=openWeeks(s);
+    if(!enrolled.length||!open.length){alert('배정된 멤버나 열린 주차가 없어요.');return;}
+    if(!confirm('['+s.name+'] 참여 멤버 '+enrolled.length+'명 × 열린 주차 '+open.length+'개\n총 '+(enrolled.length*open.length)+'개를 전체 인증완료 처리할까요?'))return;
+    enrolled.forEach(function(m){
+      open.forEach(function(w){setCk(sid,w.num,m.id,'done');});
+    });
+    persist();
+  });});
   qsa('[data-sasgn]',function(el){el.addEventListener('change',function(e){
     var p=e.target.dataset.sasgn.split('__');var sid=p[0],mid=p[1];
     var m=S.members.filter(function(x){return x.id===mid;})[0];if(!m)return;
