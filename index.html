@@ -354,13 +354,13 @@ function rCI(){
           }
           var prevW=aw.filter(function(x){return x.num===w.num-1;})[0];
           var prevCk=prevW?ck(s.id,prevW.num,m.id):null;
-          // N주차 자료는 N주차가 이번주이거나 이전 주차일 때 열림 (미래 주차는 잠금)
-          var matUnlocked=hasMat&&(
-            curWk<=0 // startDate 없으면 기존 방식
-              ?(w.num===1||(prevW!==undefined&&prevCk==='done'))
-              :(w.num<=curWk) // 이번주 포함 이전 주차만 공개
-          );
           var hasMat=w.materialUrl&&w.materialUrl.trim()!=='';
+          // N주차 자료: startDate 있으면 이번주 이하일 때 공개, 없으면 이전주 인증 시 공개
+          var matUnlocked=hasMat&&(
+            curWk<=0
+              ?(w.num===1||(prevW!==undefined&&prevCk==='done'))
+              :(w.num<=curWk)
+          );
           h+='<div style="margin-bottom:8px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:'+(hasMat||w.note?'5px':'0')+';">'+
           '<span class="wk-chip '+(isOpen?'wk-open':'wk-locked')+(isCurWk?' wk-curweek':'')+'">'+(isCurWk?'⭐ ':'')+(isOpen?'🔓':'🔒')+' '+w.num+'주차'+(isCurWk?' ← 이번주':'')+
           '</span>';
