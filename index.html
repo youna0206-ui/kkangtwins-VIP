@@ -317,7 +317,7 @@ function rCI(){
         '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'+
           '<span style="font-size:11px;color:var(--mu);">'+ss.dn+'/'+ss.t+'주</span>'+
           '<span style="font-size:12px;font-weight:700;color:'+(ss.pct===100?'var(--gr)':'var(--pr)')+';">'+ss.pct+'%</span>'+
-          '<span style="font-size:13px;color:var(--mu);">'+(isExpCI?'▲':'▼')+'</span>'+
+          '<span style="font-size:13px;color:rgba(255,255,255,.85);">'+(isExpCI?'▲':'▼')+'</span>'+
         '</div></div>';
       if(isExpCI){
         h+='<div style="padding:0 1rem .875rem;">';
@@ -938,14 +938,14 @@ function rST(){
       var catStudies=S.studies.filter(function(s){return s.cat===cat;});
       var ci2=cats.indexOf(cat);
       var isCatOpen=S.expandedCat[cat]!==false;
-      h+='<div><div style="display:flex;align-items:center;gap:8px;padding:.5rem .75rem;background:linear-gradient(135deg,var(--prl),#EFF6FF);border-radius:var(--rs);margin-bottom:6px;border:1.5px solid var(--br);">'+
+      h+='<div><div style="display:flex;align-items:center;gap:8px;padding:.5rem .75rem;background:linear-gradient(135deg,var(--pr),#7B2FF7);border-radius:var(--rs);margin-bottom:6px;border:none;box-shadow:0 2px 8px rgba(155,71,207,.25);">'+
         '<div style="display:flex;flex-direction:column;gap:2px;">'+
           '<button style="font-size:9px;padding:1px 5px;border:1px solid var(--br);border-radius:4px;background:rgba(255,255,255,.8);cursor:pointer;color:var(--mu);" data-catup="'+esc(cat)+'"'+(ci2===0?' disabled':'')+'>▲</button>'+
           '<button style="font-size:9px;padding:1px 5px;border:1px solid var(--br);border-radius:4px;background:rgba(255,255,255,.8);cursor:pointer;color:var(--mu);" data-catdn="'+esc(cat)+'"'+(ci2===cats.length-1?' disabled':'')+'>▼</button>'+
         '</div>'+
         '<div style="display:flex;align-items:center;gap:6px;flex:1;cursor:pointer;" data-cattog="'+esc(cat)+'">'+
-          '<span style="font-size:15px;font-weight:800;color:var(--pr);flex:1;letter-spacing:-.3px;">'+esc(cat)+'</span>'+
-          '<span style="font-size:11px;color:var(--mu);background:rgba(255,255,255,.8);padding:1px 7px;border-radius:20px;border:1px solid var(--br);">'+catStudies.length+'개</span>'+
+          '<span style="font-size:15px;font-weight:800;color:#fff;flex:1;letter-spacing:-.3px;text-shadow:0 1px 2px rgba(0,0,0,.15);">'+esc(cat)+'</span>'+
+          '<span style="font-size:11px;color:var(--pr);background:rgba(255,255,255,.9);padding:1px 7px;border-radius:20px;border:none;font-weight:700;">'+catStudies.length+'개</span>'+
           '<span style="font-size:13px;color:var(--mu);">'+(isCatOpen?'▲':'▼')+'</span>'+
         '</div>'+
       '</div>';
@@ -966,7 +966,7 @@ function rST(){
             '</div>'+
             // 2행: 컨트롤
             '<div style="display:flex;align-items:center;gap:4px;padding:.2rem .75rem .4rem .75rem;flex-wrap:wrap;justify-content:flex-start;border-top:1px solid #FCE8F5;">'+
-              '<select data-movecat="'+s.id+'" style="font-size:11px;padding:3px 6px;border-radius:20px;border:2px solid var(--pr);background:var(--pr);color:#fff;font-weight:700;max-width:90px;cursor:pointer;" title="카테고리 변경">'+
+              '<select data-movecat="'+s.id+'" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid var(--bl);background:var(--bll);color:var(--bld);max-width:80px;" title="카테고리 변경">'+
                 cats.map(function(c){return '<option value="'+esc(c)+'"'+(s.cat===c?' selected':'')+'>'+esc(c)+'</option>';}).join('')+
               '</select>'+
               '<input type="date" value="'+esc(s.startDate||'')+'" data-sdate="'+s.id+'" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid var(--br);background:var(--wh);width:110px;" title="스터디 시작일">'+
