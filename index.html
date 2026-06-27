@@ -339,6 +339,14 @@ function rCI(){
           var status=ck(s.id,w.num,m.id);var isOpen=!w.locked;
           var curWk=getCurrentWeek(s);var isCurWk=curWk>0&&w.num===curWk;
           var isFuture=curWk>0&&w.num>curWk;
+          // 해당 주차 마감 후 7일 지나면 인증 불가
+          var isPastDeadline=false;
+          if(s.startDate&&curWk>0&&w.num<curWk&&!isCurWk){
+            var wkStart=new Date(s.startDate);wkStart.setHours(0,0,0,0);
+            var deadline=new Date(wkStart.getTime()+(w.num*7+7)*24*60*60*1000);
+            var nowD=new Date();nowD.setHours(0,0,0,0);
+            isPastDeadline=nowD>=deadline;
+          }
           var prevW=aw.filter(function(x){return x.num===w.num-1;})[0];
           var prevCk=prevW?ck(s.id,prevW.num,m.id):null;
           var matUnlocked=w.num===1||(prevW!==undefined&&prevCk==='done');
@@ -346,9 +354,11 @@ function rCI(){
           h+='<div style="margin-bottom:8px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:'+(hasMat||w.note?'5px':'0')+';">'+
           '<span class="wk-chip '+(isOpen?'wk-open':'wk-locked')+(isCurWk?' wk-curweek':'')+'">'+(isCurWk?'⭐ ':'')+(isOpen?'🔓':'🔒')+' '+w.num+'주차'+(isCurWk?' ← 이번주':'')+
           '</span>';
-                    if(isOpen&&!isFuture){
+                    if(isOpen&&!isFuture&&!isPastDeadline){
             h+='<button class="sbtn'+(status==='done'?' done':'')+'" data-ck="'+m.id+'__'+s.id+'__'+w.num+'__done">✅ 인증</button>'+
               '<button class="sbtn'+(status==='vacation'?' vac':'')+'" data-ck="'+m.id+'__'+s.id+'__'+w.num+'__vacation">🏖️ 휴가</button>';
+          } else if(isOpen&&isPastDeadline){
+            h+='<a href="https://open.kakao.com/me/kdkd" target="_blank" style="font-size:11px;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:3px 10px;border-radius:20px;text-decoration:none;font-weight:600;">강둥맘에게 문의하기</a>';
           } else if(isOpen&&isFuture){
             h+='<span style="font-size:11px;color:var(--mu);background:#F3F4F6;padding:3px 8px;border-radius:20px;">아직 인증 불가</span>';
           } else {
@@ -1041,7 +1051,8 @@ function rST(){
                 aw.map(function(w){
                   return '<div style="background:#F9F9F9;border:1px solid #F3D0E9;border-radius:var(--rs);padding:.45rem .7rem;margin-bottom:5px;">'+
                     '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'+
-                      '<span style="font-size:12px;font-weight:700;min-width:38px;">'+w.num+'주차</span>'+
+                      (function(){var cwk=getCurrentWeek(s);var isCW=cwk>0&&w.num===cwk;
+                        return '<span class="wk-chip '+(w.locked?'wk-locked':'wk-open')+(isCW?' wk-curweek':'')+'" style="font-size:11px;">'+(isCW?'⭐ ':'')+(w.locked?'🔒':'🔓')+' '+w.num+'주차'+(isCW?' (이번주)':'')+' </span>';})()+
                       '<button class="lock-btn '+(w.locked?'locked':'open')+'" data-lock="'+s.id+'__'+w.num+'">'+(w.locked?'🔒 잠금':'🔓 열림')+'</button>'+
                       '<button style="font-size:11px;padding:2px 7px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;" data-delwk="'+s.id+'__'+w.num+'">🗑</button>'+
                     '</div>'+
