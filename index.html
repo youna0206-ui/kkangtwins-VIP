@@ -280,9 +280,14 @@ function rAL(){
     '<button class="abtn full" id="adl">로그인</button></div></div></div>';
 }
 function rCI(){
-  if(S.isAdmin)return '<div class="sec" style="text-align:center;font-size:14px;color:var(--pr);font-weight:600;">리포트 탭에서 인증현황을 확인하세요</div>';
-  if(!S.loggedMember)return rML();
-  var m=S.loggedMember;
+  var m;
+  if(S.isAdmin){
+    m=S.members.filter(function(x){return x.name&&x.name.indexOf('강둥맘')>=0;})[0];
+    if(!m)return '<div class="sec" style="text-align:center;font-size:14px;color:var(--mu);">강둥맘 멤버를 찾을 수 없어요</div>';
+  } else {
+    if(!S.loggedMember)return rML();
+    m=S.loggedMember;
+  }
   var my=S.studies.filter(function(s){return s.active&&(m.studyIds||[]).indexOf(s.id)>=0;});
   var st=mCurSt(m);
   var h='<div class="stack"><div class="sec rb" style="padding:.875rem 1rem;">'+
@@ -1657,13 +1662,7 @@ function applyData(d){
   S.catOrder=savedOrder.filter(function(c){return allCats.indexOf(c)>=0;});
   allCats.forEach(function(c){if(S.catOrder.indexOf(c)<0)S.catOrder.push(c);});
   S.members.sort(function(a,b){try{return a.name.localeCompare(b.name,'ko');}catch(e){return a.name<b.name?-1:a.name>b.name?1:0;}});
-  S.loading=false;
-  // 강둥맘 자동 로그인 (아무도 로그인 안 된 상태일 때)
-  if(!S.loggedMember&&!S.isAdmin){
-    var kdm=S.members.filter(function(x){return x.name&&x.name.indexOf('강둥맘')>=0;})[0];
-    if(kdm){S.loggedMember=kdm;S.tab='ci';}
-  }
-  render();
+  S.loading=false;render();
 }
 (async function(){
   render();
