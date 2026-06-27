@@ -1020,8 +1020,12 @@ function rST(){
           '<div style="border-top:1px solid #F3D0E9;">'+
             '<div style="display:flex;align-items:center;gap:5px;padding:.35rem .75rem;background:#FAFAFA;">'+
               '<span style="font-size:12px;color:var(--mu);">📅 주차 관리</span>'+
-              '<button class="lock-btn open" data-allopen="'+s.id+'" style="font-size:10px;">🔓 전체열기</button>'+
-              '<button class="lock-btn locked" data-alllock="'+s.id+'" style="font-size:10px;">🔒 전체잠금</button>'+
+              (function(){
+                var allLocked=aw.length>0&&aw.every(function(w){return w.locked;});
+                var allOpen=aw.length>0&&aw.every(function(w){return !w.locked;});
+                return '<button class="lock-btn open" data-allopen="'+s.id+'" style="font-size:10px;'+(allOpen?'background:var(--gr);color:#fff;border-color:var(--gr);font-weight:800;':'')+'">'+(allOpen?'✅':'🔓')+' 전체열기</button>'+
+                       '<button class="lock-btn locked" data-alllock="'+s.id+'" style="font-size:10px;'+(allLocked?'background:#6B7280;color:#fff;border-color:#6B7280;font-weight:800;':'')+'">'+(allLocked?'🔒':'🔒')+' 전체잠금</button>';
+              })()+
               '<div style="flex:1;"></div>'+
               '<div style="display:flex;align-items:center;gap:4px;cursor:pointer;" data-expw="'+s.id+'">'+
                 '<span style="font-size:12px;color:var(--mu);">'+aw.length+'주차</span>'+
