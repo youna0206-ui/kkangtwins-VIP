@@ -955,30 +955,29 @@ function rST(){
         var isFirst=ci===0;var isLast=ci===catStudies.length-1;
         h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);margin-bottom:6px;overflow:hidden;">'+
           // 헤더행
-          '<div style="display:flex;align-items:center;gap:4px;padding:.5rem .75rem;flex-wrap:wrap;">'+
-            // 순서 버튼
-            '<div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;">'+
-              '<button style="font-size:9px;padding:1px 4px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);'+(isFirst?'opacity:.3;':'')+'" data-sup="'+s.id+'"'+(isFirst?' disabled':'')+'>▲</button>'+
-              '<button style="font-size:9px;padding:1px 4px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);'+(isLast?'opacity:.3;':'')+'" data-sdn="'+s.id+'"'+(isLast?' disabled':'')+'>▼</button>'+
+          '<div style="display:flex;flex-direction:column;gap:0;">'+
+            // 1행: 이름
+            '<div style="display:flex;align-items:center;gap:4px;padding:.5rem .75rem .3rem .75rem;">'+
+              '<div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;">'+
+                '<button style="font-size:9px;padding:1px 4px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);'+(isFirst?'opacity:.3;':'')+'" data-sup="'+s.id+'"'+(isFirst?' disabled':'')+'>▲</button>'+
+                '<button style="font-size:9px;padding:1px 4px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);'+(isLast?'opacity:.3;':'')+'" data-sdn="'+s.id+'"'+(isLast?' disabled':'')+'>▼</button>'+
+              '</div>'+
+              '<input type="text" value="'+esc(s.name)+'" data-rename="'+s.id+'" style="flex:1;font-size:13px;font-weight:600;border:1.5px solid transparent;background:transparent;outline:none;padding:2px 4px;border-radius:4px;color:var(--tx);" onfocus="this.style.borderColor=\'var(--pr)\';this.style.background=\'var(--prl)\'" onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'">'+
             '</div>'+
-            // 이름 편집
-            '<input type="text" value="'+esc(s.name)+'" data-rename="'+s.id+'" style="flex:1;min-width:80px;font-size:13px;font-weight:600;border:1.5px solid transparent;background:transparent;outline:none;padding:2px 4px;border-radius:4px;color:var(--tx);" onfocus="this.style.borderColor=\'var(--pr)\';this.style.background=\'var(--prl)\'" onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'">'+
-            // 카테고리 변경
-            '<select data-movecat="'+s.id+'" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid var(--bl);background:var(--bll);color:var(--bld);flex-shrink:0;max-width:80px;" title="카테고리 변경">'+
-              cats.map(function(c){return '<option value="'+esc(c)+'"'+(s.cat===c?' selected':'')+'>'+esc(c)+'</option>';}).join('')+
-            '</select>'+
-            // 요일
-            '<input type="date" value="'+esc(s.startDate||'')+'" data-sdate="'+s.id+'" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid var(--br);background:var(--wh);flex-shrink:0;width:110px;" title="스터디 시작일">'+
-            '<select data-dow="'+s.id+'" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid var(--br);background:var(--wh);flex-shrink:0;width:58px;">'+
-              '<option value="" '+(s.dayOfWeek===''?'selected':'')+'>요일</option>'+
-              ['월','화','수','목','금','토','일'].map(function(d){return '<option value="'+d+'" '+(s.dayOfWeek===d?'selected':'')+'>'+d+'요일</option>';}).join('')+
-            '</select>'+
-            // 활성
-            '<button class="tgl '+(s.active?'on':'off')+'" data-stg="'+s.id+'" style="flex-shrink:0;"></button>'+
-            // 복제
-            '<button style="font-size:11px;padding:2px 6px;border-radius:20px;border:1.5px solid var(--bl);background:var(--bll);color:var(--bld);cursor:pointer;flex-shrink:0;" data-dup="'+s.id+'">복제</button>'+
-            // 삭제
-            '<button style="font-size:11px;padding:2px 6px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;flex-shrink:0;" data-dels="'+s.id+'">🗑</button>'+
+            // 2행: 컨트롤
+            '<div style="display:flex;align-items:center;gap:4px;padding:.2rem .75rem .4rem .75rem;flex-wrap:wrap;border-top:1px solid #FCE8F5;">'+
+              '<select data-movecat="'+s.id+'" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid var(--bl);background:var(--bll);color:var(--bld);max-width:80px;" title="카테고리 변경">'+
+                cats.map(function(c){return '<option value="'+esc(c)+'"'+(s.cat===c?' selected':'')+'>'+esc(c)+'</option>';}).join('')+
+              '</select>'+
+              '<input type="date" value="'+esc(s.startDate||'')+'" data-sdate="'+s.id+'" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid var(--br);background:var(--wh);width:110px;" title="스터디 시작일">'+
+              '<select data-dow="'+s.id+'" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid var(--br);background:var(--wh);width:58px;">'+
+                '<option value="" '+(s.dayOfWeek===''?'selected':'')+'>요일</option>'+
+                ['월','화','수','목','금','토','일'].map(function(d){return '<option value="'+d+'" '+(s.dayOfWeek===d?'selected':'')+'>'+d+'요일</option>';}).join('')+
+              '</select>'+
+              '<button class="tgl '+(s.active?'on':'off')+'" data-stg="'+s.id+'" style="flex-shrink:0;"></button>'+
+              '<button style="font-size:11px;padding:2px 6px;border-radius:20px;border:1.5px solid var(--bl);background:var(--bll);color:var(--bld);cursor:pointer;" data-dup="'+s.id+'">복제</button>'+
+              '<button style="font-size:11px;padding:2px 6px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;" data-dels="'+s.id+'">🗑</button>'+
+            '</div>'+
           '</div>'+
           // 신청 + 밴드
           '<div style="border-top:1px solid #F3D0E9;background:'+(s.applyOpen?'var(--grb)':'#F9F9F9')+';">'+
