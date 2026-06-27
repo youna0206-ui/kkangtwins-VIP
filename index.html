@@ -178,6 +178,7 @@ function ck(sid,wn,mid){return S.checkins[ckKey(sid,wn,mid)]||null;}
 function setCk(sid,wn,mid,val){var k=ckKey(sid,wn,mid);if(val)S.checkins[k]=val;else delete S.checkins[k];}
 function allWeeks(s){return s.weeks||[];}
 function openWeeks(s){return allWeeks(s).filter(function(w){return !w.locked;});}
+function isStudyEnded(s){return s.cat&&s.cat.replace(/\s/g,'').indexOf('종료')>=0;}
 function mCurSt(m){
   var my=S.studies.filter(function(s){return s.active&&(m.studyIds||[]).indexOf(s.id)>=0;});
   var dn=0,tot=0;
@@ -755,7 +756,6 @@ function rOV(){
 
   // 🔴 열린 주차가 없는 활성 스터디
   // 종료된 스터디 = 카테고리가 '종료된스터디'
-  function isStudyEnded(s){return s.cat&&s.cat.replace(/\s/g,'').indexOf('종료')>=0;}
   var noOpen=S.studies.filter(function(s){return s.active&&openWeeks(s).length===0&&!isStudyEnded(s);});
   // 🟡 이번주 인증률 0%인 스터디 (열린 주차 있는데 아무도 인증 안 함)
   var zeroRate=S.studies.filter(function(s){
