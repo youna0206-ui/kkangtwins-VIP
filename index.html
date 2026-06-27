@@ -965,8 +965,8 @@ function rST(){
               '<input type="text" value="'+esc(s.name)+'" data-rename="'+s.id+'" style="flex:1;font-size:13px;font-weight:600;border:1.5px solid transparent;background:transparent;outline:none;padding:2px 4px;border-radius:4px;color:var(--tx);" onfocus="this.style.borderColor=\'var(--pr)\';this.style.background=\'var(--prl)\'" onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'">'+
             '</div>'+
             // 2행: 컨트롤
-            '<div style="display:flex;align-items:center;gap:4px;padding:.2rem .75rem .4rem .75rem;flex-wrap:wrap;border-top:1px solid #FCE8F5;">'+
-              '<select data-movecat="'+s.id+'" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid var(--bl);background:var(--bll);color:var(--bld);max-width:80px;" title="카테고리 변경">'+
+            '<div style="display:flex;align-items:center;gap:4px;padding:.2rem .75rem .4rem .75rem;flex-wrap:wrap;justify-content:flex-start;border-top:1px solid #FCE8F5;">'+
+              '<select data-movecat="'+s.id+'" style="font-size:11px;padding:3px 6px;border-radius:20px;border:2px solid var(--pr);background:var(--pr);color:#fff;font-weight:700;max-width:90px;cursor:pointer;" title="카테고리 변경">'+
                 cats.map(function(c){return '<option value="'+esc(c)+'"'+(s.cat===c?' selected':'')+'>'+esc(c)+'</option>';}).join('')+
               '</select>'+
               '<input type="date" value="'+esc(s.startDate||'')+'" data-sdate="'+s.id+'" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid var(--br);background:var(--wh);width:110px;" title="스터디 시작일">'+
