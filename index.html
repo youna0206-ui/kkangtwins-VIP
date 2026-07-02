@@ -118,7 +118,7 @@ select:focus{outline:none;border-color:var(--pr)}
 <body>
 <div id="toast"></div>
 <!-- 완주 카드 모달 -->
-<div id="complete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+<div id="complete-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.75);z-index:10000;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <canvas id="complete-canvas" width="600" height="800" style="max-width:88vw;max-height:72vh;border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.6);"></canvas>
   <div style="display:flex;gap:12px;">
     <button id="complete-save" style="background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;border:none;padding:12px 28px;border-radius:30px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(245,158,11,.4);">📥 이미지 저장</button>
@@ -1866,18 +1866,17 @@ function bAll(){
     var prev=ck(sid,wn,mid);
     var next=prev===val?null:val;
     setCk(sid,wn,mid,next);
-    if(next==='done'){
-      showCelebration('🎉');
-      // 완주 체크
-      var s=S.studies.filter(function(x){return x.id===sid;})[0];
-      var m=S.members.filter(function(x){return x.id===mid;})[0]||(S.isAdmin?S.members.filter(function(x){return x.name&&x.name.indexOf('강둥맘')>=0;})[0]:S.loggedMember);
-      if(s&&m&&isStudyComplete(s,m)){
-        setTimeout(function(){
-          showCompleteCard(s.name,m.name,allWeeks(s).length);
-        },800);
-      }
-    } else if(next==='vacation')showCelebration('🏖️');
+    if(next==='done')showCelebration('🎉');
+    else if(next==='vacation')showCelebration('🏖️');
     render();persist();
+    // 완주 체크 (render 후)
+    if(next==='done'){
+      var _s=S.studies.filter(function(x){return x.id===sid;})[0];
+      var _m=S.members.filter(function(x){return x.id===mid;})[0]||S.loggedMember;
+      if(_s&&_m&&isStudyComplete(_s,_m)){
+        setTimeout(function(){showCompleteCard(_s.name,_m.name,allWeeks(_s).length);},700);
+      }
+    }
   });});
   // 관리자 인증 수정
   qsa('[data-ack]',function(el){el.addEventListener('click',function(){
