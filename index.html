@@ -1542,7 +1542,15 @@ function rST(){
 }
 
 function bAll(){
-  qsa('[data-tab]',function(el){el.addEventListener('click',function(){S.tab=el.dataset.tab;S.chgErr='';S.chgOk='';render();});});
+  qsa('[data-tab]',function(el){el.addEventListener('click',function(){
+    S.tab=el.dataset.tab;S.chgErr='';S.chgOk='';
+    // 멤버 탭만 기억 (관리자 탭 제외)
+    var memTabs=['ci','mp','apply','notice','cal','cp'];
+    if(memTabs.indexOf(S.tab)>=0){
+      try{localStorage.setItem('kkang_last_tab',S.tab);}catch(e){}
+    }
+    render();
+  });});
   on('mlb',function(){S.tab='mlogin';render();});on('alb',function(){S.tab='alogin';render();});
   on('lo',function(){S.isAdmin=false;S.loggedMember=null;S.tab='mlogin';render();});
   // 이미지 에러 처리
@@ -1663,7 +1671,9 @@ function bAll(){
     if(!id){S.memberErr='이름을 선택해주세요';render();return;}
     var m=S.members.filter(function(x){return x.id===id;})[0];
     if(!m||m.pw!==pw){S.memberErr='비밀번호가 틀렸어요';render();return;}
-    S.loggedMember=m;S.memberErr='';S.selMemId='';S.tab='ci';render();
+    S.loggedMember=m;S.memberErr='';S.selMemId='';
+    try{var lt=localStorage.getItem('kkang_last_tab');S.tab=(lt&&['ci','mp','apply','notice','cal','cp'].indexOf(lt)>=0)?lt:'ci';}catch(e){S.tab='ci';}
+    render();
   });
   on('adl',function(){
     var pw=g('apw')?g('apw').value:'';
