@@ -116,6 +116,15 @@ select:focus{outline:none;border-color:var(--pr)}
 </style>
 </head>
 <body>
+<div id="toast"></div>
+<!-- 완주 카드 모달 -->
+<div id="complete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+  <canvas id="complete-canvas" width="600" height="800" style="max-width:88vw;max-height:72vh;border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.6);"></canvas>
+  <div style="display:flex;gap:12px;">
+    <button id="complete-save" style="background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;border:none;padding:12px 28px;border-radius:30px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(245,158,11,.4);">📥 이미지 저장</button>
+    <button id="complete-close" style="background:rgba(255,255,255,.15);color:#fff;border:2px solid rgba(255,255,255,.4);padding:12px 28px;border-radius:30px;font-size:15px;font-weight:700;cursor:pointer;">닫기</button>
+  </div>
+</div>
 <div class="wrap" id="app"></div>
 <script>
 
@@ -190,6 +199,128 @@ function setCk(sid,wn,mid,val){var k=ckKey(sid,wn,mid);if(val)S.checkins[k]=val;
 function allWeeks(s){return s.weeks||[];}
 function openWeeks(s){return allWeeks(s).filter(function(w){return !w.locked;});}
 function isStudyEnded(s){return s.cat&&s.cat.replace(/\s/g,'').indexOf('종료')>=0;}
+function showCompleteCard(studyName, memberName, weekCount){
+  var modal=document.getElementById('complete-modal');
+  var canvas=document.getElementById('complete-canvas');
+  if(!modal||!canvas)return;
+  var ctx=canvas.getContext('2d');
+  var W=600,H=800;
+  canvas.width=W;canvas.height=H;
+
+  // 배경 골드 그라데이션
+  var bg=ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#1A1A2E');
+  bg.addColorStop(0.4,'#16213E');
+  bg.addColorStop(1,'#0F3460');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+  // 골드 테두리
+  var border=ctx.createLinearGradient(0,0,W,H);
+  border.addColorStop(0,'#FFD700');
+  border.addColorStop(0.5,'#FFA500');
+  border.addColorStop(1,'#FFD700');
+  ctx.strokeStyle=border;ctx.lineWidth=8;
+  ctx.strokeRect(16,16,W-32,H-32);
+  ctx.strokeStyle='rgba(255,215,0,.3)';ctx.lineWidth=2;
+  ctx.strokeRect(24,24,W-48,H-48);
+
+  // 별 장식
+  function drawStar(cx,cy,r,color){
+    ctx.save();ctx.beginPath();ctx.fillStyle=color;
+    for(var i=0;i<5;i++){
+      var a=Math.PI/180*(72*i-90);
+      var b=Math.PI/180*(72*i-90+36);
+      i===0?ctx.moveTo(cx+r*Math.cos(a),cy+r*Math.sin(a)):ctx.lineTo(cx+r*Math.cos(a),cy+r*Math.sin(a));
+      ctx.lineTo(cx+r*0.4*Math.cos(b),cy+r*0.4*Math.sin(b));
+    }
+    ctx.closePath();ctx.fill();ctx.restore();
+  }
+  var stars=[[80,80,18],[520,80,14],[60,720,14],[540,720,18],[300,60,12],[150,150,8],[450,150,8]];
+  stars.forEach(function(s){drawStar(s[0],s[1],s[2],'rgba(255,215,0,0.6)');});
+
+  // 트로피 이모지
+  ctx.font='120px serif';ctx.textAlign='center';
+  ctx.shadowColor='rgba(255,200,0,.8)';ctx.shadowBlur=30;
+  ctx.fillText('🏆',W/2,230);
+  ctx.shadowBlur=0;
+
+  // COMPLETE 텍스트
+  var gold=ctx.createLinearGradient(0,250,0,310);
+  gold.addColorStop(0,'#FFD700');gold.addColorStop(0.5,'#FFF8DC');gold.addColorStop(1,'#FFA500');
+  ctx.fillStyle=gold;
+  ctx.font='bold 52px sans-serif';
+  ctx.shadowColor='rgba(255,165,0,.6)';ctx.shadowBlur=15;
+  ctx.fillText('완  주  달  성',W/2,300);
+  ctx.shadowBlur=0;
+
+  // 구분선
+  var line=ctx.createLinearGradient(80,0,W-80,0);
+  line.addColorStop(0,'transparent');line.addColorStop(0.5,'#FFD700');line.addColorStop(1,'transparent');
+  ctx.strokeStyle=line;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(80,330);ctx.lineTo(W-80,330);ctx.stroke();
+
+  // 스터디 이름
+  ctx.fillStyle='#FFF8DC';
+  ctx.font='bold 38px sans-serif';
+  // 긴 이름 줄바꿈
+  var maxW=460,words=studyName.split('');
+  var line1='',lines2=[];
+  for(var i=0;i<words.length;i++){
+    var test=line1+words[i];
+    if(ctx.measureText(test).width>maxW&&line1){
+      lines2.push(line1);line1=words[i];
+    } else line1=test;
+  }
+  lines2.push(line1);
+  var sy=390;
+  lines2.forEach(function(l){ctx.fillText(l,W/2,sy);sy+=50;});
+
+  // 닉네임
+  ctx.fillStyle='#FFD700';
+  ctx.font='bold 44px sans-serif';
+  ctx.shadowColor='rgba(255,200,0,.5)';ctx.shadowBlur=10;
+  ctx.fillText(memberName,W/2,sy+40);
+  ctx.shadowBlur=0;
+
+  // 주차
+  ctx.fillStyle='rgba(255,248,220,.8)';
+  ctx.font='28px sans-serif';
+  ctx.fillText(weekCount+'주 완주 🎉',W/2,sy+100);
+
+  // 날짜
+  var today=new Date();
+  var dateStr=today.getFullYear()+'.'+(today.getMonth()+1+'').padStart(2,'0')+'.'+( today.getDate()+'').padStart(2,'0');
+  ctx.fillStyle='rgba(255,215,0,.6)';
+  ctx.font='22px sans-serif';
+  ctx.fillText(dateStr,W/2,sy+150);
+
+  // 구분선2
+  ctx.strokeStyle=line;ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(80,sy+175);ctx.lineTo(W-80,sy+175);ctx.stroke();
+
+  // 인스타 태그
+  ctx.fillStyle='rgba(255,215,0,.5)';
+  ctx.font='20px sans-serif';
+  ctx.fillText('@kkang_twins_',W/2,sy+215);
+
+  // 모달 표시
+  modal.style.display='flex';
+
+  // 저장 버튼
+  var saveBtn=document.getElementById('complete-save');
+  if(saveBtn){
+    saveBtn.onclick=function(){
+      var a=document.createElement('a');
+      a.href=canvas.toDataURL('image/png');
+      a.download='완주_'+memberName+'_'+studyName+'.png';
+      a.click();
+    };
+  }
+  // 닫기
+  var closeBtn=document.getElementById('complete-close');
+  if(closeBtn)closeBtn.onclick=function(){modal.style.display='none';};
+  modal.onclick=function(e){if(e.target===modal)modal.style.display='none';};
+}
 function showCelebration(emoji){
   // 이모지 팝
   var pop=document.createElement('div');
@@ -1735,8 +1866,17 @@ function bAll(){
     var prev=ck(sid,wn,mid);
     var next=prev===val?null:val;
     setCk(sid,wn,mid,next);
-    if(next==='done')showCelebration('🎉');
-    else if(next==='vacation')showCelebration('🏖️');
+    if(next==='done'){
+      showCelebration('🎉');
+      // 완주 체크
+      var s=S.studies.filter(function(x){return x.id===sid;})[0];
+      var m=S.members.filter(function(x){return x.id===mid;})[0]||(S.isAdmin?S.members.filter(function(x){return x.name&&x.name.indexOf('강둥맘')>=0;})[0]:S.loggedMember);
+      if(s&&m&&isStudyComplete(s,m)){
+        setTimeout(function(){
+          showCompleteCard(s.name,m.name,allWeeks(s).length);
+        },800);
+      }
+    } else if(next==='vacation')showCelebration('🏖️');
     render();persist();
   });});
   // 관리자 인증 수정
