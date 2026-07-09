@@ -2236,8 +2236,12 @@ function applyData(d){
   var savedOrder=d&&d.catOrder&&d.catOrder.length?d.catOrder:[];
   // 저장된 순서 기준으로 정렬, 새 카테고리는 맨 뒤에 추가
   S.events=d&&d.events?d.events:{};
+  // 루틴 체크 카테고리 항상 포함
+  if(allCats.indexOf('루틴 체크')<0)allCats.unshift('루틴 체크');
   S.catOrder=savedOrder.filter(function(c){return allCats.indexOf(c)>=0;});
   allCats.forEach(function(c){if(S.catOrder.indexOf(c)<0)S.catOrder.push(c);});
+  // 루틴 체크가 catOrder에 없으면 맨 앞에 추가
+  if(S.catOrder.indexOf('루틴 체크')<0)S.catOrder.unshift('루틴 체크');
   S.members.sort(function(a,b){try{return a.name.localeCompare(b.name,'ko');}catch(e){return a.name<b.name?-1:a.name>b.name?1:0;}});
   S.loading=false;render();
 }
