@@ -1595,14 +1595,15 @@ function rRP(){
         });
         var pct=total?Math.round(done/total*100):0;
         var vpct=total?Math.round(vac/total*100):0;
-        bars+='<div style="margin-bottom:8px;">';
-        bars+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">';
-        bars+='<span style="font-size:12px;font-weight:600;color:var(--tx);">'+esc(s.name)+'</span>';
-        bars+='<span style="font-size:11px;color:var(--mu);">✅'+pct+'% 🏖️'+vpct+'% · '+enrolled.length+'명 '+aw.length+'주</span>';
-        bars+='</div>';
-        bars+='<div style="height:12px;background:#F3F4F6;border-radius:6px;overflow:hidden;display:flex;">';
-        bars+='<div style="width:'+pct+'%;background:linear-gradient(90deg,#16A34A,#22C55E);transition:width .4s;"></div>';
-        bars+='<div style="width:'+vpct+'%;background:linear-gradient(90deg,#3B82F6,#60A5FA);transition:width .4s;"></div>';
+        bars+='<div style="margin-bottom:10px;">';
+        // 1줄: 스터디 이름
+        bars+='<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px;word-break:keep-all;">'+esc(s.name)+'</div>';
+        // 2줄: 통계
+        bars+='<div style="font-size:11px;color:var(--mu);margin-bottom:4px;">✅'+pct+'% 🏖️'+vpct+'% · '+enrolled.length+'명 · '+aw.length+'주</div>';
+        // 막대
+        bars+='<div style="height:10px;background:#F3F4F6;border-radius:5px;overflow:hidden;display:flex;">';
+        bars+='<div style="width:'+pct+'%;background:linear-gradient(90deg,#16A34A,#22C55E);"></div>';
+        bars+='<div style="width:'+vpct+'%;background:linear-gradient(90deg,#3B82F6,#60A5FA);"></div>';
         bars+='</div>';
         bars+='</div>';
       });
@@ -1657,10 +1658,8 @@ function rRP(){
         var barColor=pct>=80?'#D97706':pct>=50?'#F59E0B':'#FCD34D';
         hasComp=true;
         compChart+='<div style="margin-bottom:8px;">';
-        compChart+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">';
-        compChart+='<span style="font-size:12px;font-weight:600;color:var(--tx);">'+esc(s.name)+'</span>';
-        compChart+='<span style="font-size:11px;color:var(--mu);">🏆'+completers.length+'/'+enrolled.length+'명 · '+pct+'%</span>';
-        compChart+='</div>';
+        compChart+='<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:2px;word-break:keep-all;">'+esc(s.name)+'</div>';
+        compChart+='<div style="font-size:11px;color:var(--mu);margin-bottom:4px;">🏆'+completers.length+'/'+enrolled.length+'명 · '+pct+'%</div>';
         compChart+='<div style="display:flex;align-items:center;gap:6px;">';
         compChart+='<div style="flex:1;height:10px;background:#FEF3C7;border-radius:5px;overflow:hidden;">';
         compChart+='<div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:5px;"></div>';
@@ -1712,10 +1711,8 @@ function rRP(){
       var pct=r.pct;
       var barColor=pct>=80?'#16A34A':pct>=50?'#F59E0B':'#EF4444';
       return '<div style="margin-bottom:10px;">'+
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">'+
-          '<span style="font-size:12px;font-weight:600;color:var(--tx);">'+esc(r.m.name)+'</span>'+
-          '<span style="font-size:11px;color:var(--mu);">✅'+r.done+' 🏖️'+r.vac+' / '+r.total+'주 · '+r.studies+'개스터디</span>'+
-        '</div>'+
+        '<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:2px;">'+esc(r.m.name)+'</div>'+
+        '<div style="font-size:11px;color:var(--mu);margin-bottom:4px);">✅'+r.done+' 🏖️'+r.vac+' / '+r.total+'주 · '+r.studies+'개스터디</div>'+
         '<div style="display:flex;align-items:center;gap:6px;">'+
           '<div style="flex:1;height:10px;background:#F3F4F6;border-radius:5px;overflow:hidden;">'+
             '<div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:5px;"></div>'+
