@@ -493,7 +493,10 @@ function rCI(){
     ciCats.sort(function(a,b){var ia=S.catOrder.indexOf(a),ib=S.catOrder.indexOf(b);if(ia<0)ia=999;if(ib<0)ib=999;return ia-ib;});
   }
   ciCats.forEach(function(cat){
-    var catS=my.filter(function(s){return s.cat===cat;});
+    // 루틴 체크는 배정 여부 무관하게 전체 표시
+    var catS=(cat==='루틴 체크')
+      ?S.studies.filter(function(s){return s.active&&s.cat==='루틴 체크';})
+      :my.filter(function(s){return s.cat===cat;});
     var isCatOpen=S.expandedCat[cat]!==false;
     h+='<div style="display:flex;align-items:center;gap:6px;padding:.4rem .75rem;cursor:pointer;border-radius:var(--rs);background:var(--bgd);border:1px solid var(--br);" data-cicattog="'+esc(cat)+'">'+
       '<span style="font-size:12px;font-weight:700;color:var(--pr);flex:1;">'+esc(cat)+'</span>'+
@@ -629,7 +632,9 @@ function rMP(){
     mpCats.sort(function(a,b){var ia=S.catOrder.indexOf(a),ib=S.catOrder.indexOf(b);if(ia<0)ia=999;if(ib<0)ib=999;return ia-ib;});
   }
   mpCats.forEach(function(cat){
-    var catS=my.filter(function(s){return s.cat===cat;});
+    var catS=(cat==='루틴 체크')
+      ?S.studies.filter(function(s){return s.active&&s.cat==='루틴 체크';})
+      :my.filter(function(s){return s.cat===cat;});
     var isCatOpen=S.expandedCat['mp_'+cat]!==false;
     // 카테고리별 합산
     var catDn=0,catTw=0;
