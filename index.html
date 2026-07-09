@@ -488,6 +488,7 @@ function rCI(){
   // 카테고리별 그룹핑
   var ciCats=[];
   my.forEach(function(s){if(ciCats.indexOf(s.cat)<0)ciCats.push(s.cat);});
+  if(ciCats.indexOf('루틴 체크')<0)ciCats.push('루틴 체크');
   if(S.catOrder&&S.catOrder.length){
     ciCats.sort(function(a,b){var ia=S.catOrder.indexOf(a),ib=S.catOrder.indexOf(b);if(ia<0)ia=999;if(ib<0)ib=999;return ia-ib;});
   }
@@ -623,6 +624,7 @@ function rMP(){
   // 카테고리별 그룹핑
   var mpCats=[];
   my.forEach(function(s){if(mpCats.indexOf(s.cat)<0)mpCats.push(s.cat);});
+  if(mpCats.indexOf('루틴 체크')<0)mpCats.push('루틴 체크');
   if(S.catOrder&&S.catOrder.length){
     mpCats.sort(function(a,b){var ia=S.catOrder.indexOf(a),ib=S.catOrder.indexOf(b);if(ia<0)ia=999;if(ib<0)ib=999;return ia-ib;});
   }
@@ -1355,8 +1357,10 @@ function rST(){
   if(!S.isAdmin) return rAL();
   // cats는 S.catOrder 기반 (페이지 로드 후에는 catOrder 사용)
   var allStudyCats=[];S.studies.forEach(function(s){if(allStudyCats.indexOf(s.cat)<0)allStudyCats.push(s.cat);});
+  if(allStudyCats.indexOf('루틴 체크')<0)allStudyCats.push('루틴 체크');
   var cats=S.catOrder.filter(function(c){return allStudyCats.indexOf(c)>=0;});
   allStudyCats.forEach(function(c){if(cats.indexOf(c)<0)cats.push(c);});
+  if(cats.indexOf('루틴 체크')<0)cats.unshift('루틴 체크');
   var subtabs=[['study','📚 스터디 관리'],['member','👥 멤버관리']];
   var h='<div class="stack" style="gap:12px;"><div style="display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;">';
   subtabs.forEach(function(t){h+='<button class="stab-btn'+(S.settingsTab===t[0]?' on':'')+'" data-stab="'+t[0]+'">'+t[1]+'</button>';});
