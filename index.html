@@ -704,6 +704,10 @@ function rNotice(){
       '<div style="display:flex;flex-direction:column;gap:8px;">'+
         '<input type="text" id="nt-title" class="ainp" placeholder="제목 (예: 6월 스터디 계획)" style="width:100%">'+
         '<textarea id="nt-body" placeholder="내용 (선택사항)" style="width:100%;padding:.65rem .875rem;border-radius:var(--rs);border:1.5px solid var(--br);font-size:14px;resize:vertical;min-height:70px;font-family:inherit;"></textarea>'+
+        '<div style="display:flex;gap:6px;align-items:center;">'+
+          '<input type="text" id="nt-link-url" class="ainp" placeholder="🔗 링크 URL (https://...)" style="flex:1;">'+
+          '<input type="text" id="nt-link-label" class="ainp" placeholder="버튼 이름" style="width:90px;">'+
+        '</div>'+
         '<div style="border:2px dashed var(--br);border-radius:var(--rs);padding:1rem;text-align:center;cursor:pointer;background:#FAFAFA;" id="nt-drop">'+
           '<div style="font-size:13px;color:var(--mu);">📷 이미지 파일을 선택하거나 여기에 끌어다 놓으세요</div>'+
           '<div style="font-size:11px;color:var(--mu);margin-top:4px;">JPG, PNG, GIF 등 · 자동 압축됨</div>'+
@@ -731,6 +735,10 @@ function rNotice(){
           '<div style="display:flex;flex-direction:column;gap:8px;">'+
             '<input type="text" id="nt-edit-title-'+n.id+'" class="ainp" value="'+esc(n.title)+'" style="width:100%">'+
             '<textarea id="nt-edit-body-'+n.id+'" rows="3" style="width:100%;padding:.65rem .875rem;border-radius:var(--rs);border:1.5px solid var(--br);font-size:14px;resize:vertical;font-family:inherit;">'+esc(n.body||'')+'</textarea>'+
+            '<div style="display:flex;gap:6px;align-items:center;">'+
+              '<input type="text" id="nt-edit-link-url-'+n.id+'" class="ainp" placeholder="🔗 링크 URL" value="'+esc(n.linkUrl||'')+'" style="flex:1;">'+
+              '<input type="text" id="nt-edit-link-label-'+n.id+'" class="ainp" placeholder="버튼 이름" value="'+esc(n.linkLabel||'')+'" style="width:90px;">'+
+            '</div>'+
             '<div style="display:flex;gap:8px;">'+
               '<button class="abtn" data-ntsave="'+n.id+'" style="flex:1;">저장</button>'+
               '<button class="abtn sec" data-ntcanceledit="'+n.id+'" style="flex:1;">취소</button>'+
@@ -755,7 +763,8 @@ function rNotice(){
             '<div style="border-top:1px solid #F9EDF5;">'+
               (n.body?'<div style="font-size:14px;padding:.75rem 1rem;line-height:1.6;white-space:pre-wrap;">'+esc(n.body)+'</div>':'')+
               (n.imageUrl?'<div style="padding:.5rem 1rem 1rem;"><img src="'+esc(n.imageUrl)+'" style="width:100%;border-radius:var(--rs);display:block;" class="notice-img"></div>':'')+
-              (!n.body&&!n.imageUrl?'<div style="padding:.75rem 1rem;font-size:13px;color:var(--mu);">내용 없음</div>':'')+
+              (n.linkUrl?'<div style="padding:.5rem 1rem 1rem;"><a href="'+esc(n.linkUrl)+'" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--pr),#7B2FF7);color:#fff;padding:8px 18px;border-radius:30px;font-size:13px;font-weight:700;text-decoration:none;">🔗 '+esc(n.linkLabel||'링크 열기')+'</a></div>':'')+
+              (!n.body&&!n.imageUrl&&!n.linkUrl?'<div style="padding:.75rem 1rem;font-size:13px;color:var(--mu);">내용 없음</div>':'')+
             '</div>'
           :'')+
         '</div>';
@@ -2211,8 +2220,9 @@ function bAll(){
     var ti=g('nt-title');var bo=g('nt-body');
     if(!ti||!ti.value.trim()){alert('제목을 입력해주세요');return;}
     var id='nt'+Date.now().toString(36);
-    S.notices[id]={id:id,title:ti.value.trim(),body:bo?bo.value.trim():'',imageUrl:ntImgData,createdAt:Date.now()};
-    ti.value='';if(bo)bo.value='';ntImgData='';
+    var lu=g('nt-link-url');var ll=g('nt-link-label');
+    S.notices[id]={id:id,title:ti.value.trim(),body:bo?bo.value.trim():'',imageUrl:ntImgData,linkUrl:lu?lu.value.trim():'',linkLabel:ll?ll.value.trim():'',createdAt:Date.now()};
+    ti.value='';if(bo)bo.value='';ntImgData='';if(lu)lu.value='';if(ll)ll.value='';
     var prev=g('nt-preview');var drop=g('nt-drop');
     if(prev)prev.style.display='none';if(drop)drop.style.display='block';
     if(ntFile)ntFile.value='';
@@ -2237,7 +2247,10 @@ function bAll(){
     var bo=document.getElementById('nt-edit-body-'+id);
     if(!ti||!ti.value.trim()){alert('제목을 입력해주세요');return;}
     var n=S.notices[id];if(!n)return;
+    var lu2=document.getElementById('nt-edit-link-url-'+id);
+    var ll2=document.getElementById('nt-edit-link-label-'+id);
     n.title=ti.value.trim();n.body=bo?bo.value:'';
+    n.linkUrl=lu2?lu2.value.trim():'';n.linkLabel=ll2?ll2.value.trim():'';
     S.editNoticeId=null;S.expandedNotice[id]=true;persistNotices();
   });});
   qsa('[data-ntdel]',function(el){el.addEventListener('click',function(){
