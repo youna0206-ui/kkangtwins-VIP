@@ -1171,6 +1171,210 @@ function rHabit(){
 
   return h+'</div>';
 }
+function rApply(){
+  if(!S.loggedMember)return rML();
+  var m=S.loggedMember;
+  var open=S.studies.filter(function(s){return s.active&&s.applyOpen;});
+  var h='<div class="stack"><div class="sec">'+
+    '<div style="font-size:15px;font-weight:700;margin-bottom:4px;">📝 스터디 신청</div>'+
+    '<div style="font-size:13px;color:var(--mu);">신청하면 ✅ 내 인증 탭에 바로 반영돼요</div></div>';
+  if(!open.length){
+    h+='<div class="empty">현재 신청 가능한 스터디가 없어요</div>';
+  } else {
+    open.forEach(function(s){
+      var isApplied=(m.studyIds||[]).indexOf(s.id)>=0;var aw=allWeeks(s);
+      h+='<div class="apply-card"><div class="rb" style="margin-bottom:6px;">'+
+        '<div><div style="font-size:14px;font-weight:600;">'+esc(s.name)+'</div>'+
+          '<div style="font-size:11px;color:var(--mu);margin-top:2px;">['+esc(s.cat)+'] · '+aw.length+'주 진행</div></div>'+
+        (isApplied?'<button class="abtn sec" data-cancel-apply="'+s.id+'" style="font-size:12px;padding:5px 12px;">취소</button>':
+          '<button class="abtn" data-do-apply="'+s.id+'" style="font-size:12px;padding:5px 12px;">신청하기</button>')+
+      '</div>'+
+      (isApplied?'<div style="font-size:11px;color:var(--gr);font-weight:600;margin-bottom:6px;">✅ 신청완료 — 내 인증 탭에서 확인하세요</div>':'')+
+      (s.bandUrl?'<a href="'+esc(s.bandUrl)+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#00C73C,#00A032);border-radius:20px;padding:6px 14px;text-decoration:none;">🎵 스터디 밴드 바로가기</a>':'')+
+      '</div>';
+    });
+  }
+  return h+'</div>';
+}
+function rNotice(){
+  if(!S.loggedMember&&!S.isAdmin) return rML();
+  var notices=Object.values(S.notices).sort(function(a,b){return b.createdAt-a.createdAt;});
+  var h='<div class="stack">';
+
+  // 관리자 공지 작성 폼
+  if(S.isAdmin){
+    h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);padding:.875rem 1rem;">'+
+      '<div style="font-size:13px;font-weight:600;color:var(--pr);margin-bottom:8px;">📢 공지 작성</div>'+
+      '<div style="display:flex;flex-direction:column;gap:8px;">'+
+        '<input type="text" id="nt-title" class="ainp" placeholder="제목 (예: 6월 스터디 계획)" style="width:100%">'+
+        '<textarea id="nt-body" placeholder="내용 (선택사항)" style="width:100%;padding:.65rem .875rem;border-radius:var(--rs);border:1.5px solid var(--br);font-size:14px;resize:vertical;min-height:70px;font-family:inherit;"></textarea>'+
+        '<div style="border:2px dashed var(--br);border-radius:var(--rs);padding:1rem;text-align:center;cursor:pointer;background:#FAFAFA;" id="nt-drop">'+
+          '<div style="font-size:13px;color:var(--mu);">📷 이미지 파일을 선택하거나 여기에 끌어다 놓으세요</div>'+
+          '<div style="font-size:11px;color:var(--mu);margin-top:4px;">JPG, PNG, GIF 등 · 자동 압축됨</div>'+
+        '</div>'+
+        '<input type="file" id="nt-file" accept="image/*" style="display:none;">'+
+        '<div id="nt-preview" style="display:none;"><img id="nt-preview-img" style="max-width:100%;border-radius:var(--rs);max-height:200px;object-fit:contain;"><button id="nt-clear-img" style="font-size:11px;padding:2px 8px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;margin-top:4px;display:block;">이미지 제거</button></div>'+
+        '<div id="nt-uploading" style="display:none;font-size:13px;color:var(--mu);text-align:center;">🔄 이미지 처리 중...</div>'+
+        '<button class="abtn full" id="nt-add">공지 등록</button>'+
+      '</div></div>';
+  }
+
+  if(!notices.length){
+    h+='<div class="empty">등록된 공지가 없어요</div>';
+  } else {
+    notices.forEach(function(n){
+      var dt=new Date(n.createdAt);
+      var dtStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+(dt.getDate());
+      var isOpen=S.expandedNotice[n.id]===true;
+      var isEdit=S.editNoticeId===n.id;
+
+      if(isEdit&&S.isAdmin){
+        // 수정 폼
+        h+='<div style="background:var(--wh);border:2px solid var(--pr);border-radius:var(--r);padding:.875rem 1rem;">'+
+          '<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:8px;">✏️ 공지 수정</div>'+
+          '<div style="display:flex;flex-direction:column;gap:8px;">'+
+            '<input type="text" id="nt-edit-title-'+n.id+'" class="ainp" value="'+esc(n.title)+'" style="width:100%">'+
+            '<textarea id="nt-edit-body-'+n.id+'" rows="3" style="width:100%;padding:.65rem .875rem;border-radius:var(--rs);border:1.5px solid var(--br);font-size:14px;resize:vertical;font-family:inherit;">'+esc(n.body||'')+'</textarea>'+
+            '<div style="display:flex;gap:8px;">'+
+              '<button class="abtn" data-ntsave="'+n.id+'" style="flex:1;">저장</button>'+
+              '<button class="abtn sec" data-ntcanceledit="'+n.id+'" style="flex:1;">취소</button>'+
+            '</div>'+
+          '</div></div>';
+      } else {
+        h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);overflow:hidden;">'+
+          // 헤더 (항상 표시)
+          '<div style="display:flex;align-items:center;gap:8px;padding:.75rem 1rem;cursor:pointer;" data-nttog="'+n.id+'">'+
+            '<div style="flex:1;">'+
+              '<div style="font-size:14px;font-weight:700;">'+esc(n.title)+'</div>'+
+              '<div style="font-size:11px;color:var(--mu);">'+dtStr+'</div>'+
+            '</div>'+
+            '<div style="display:flex;align-items:center;gap:6px;">'+
+              (S.isAdmin?'<button style="font-size:11px;padding:2px 7px;border-radius:20px;border:1.5px solid var(--bl);background:var(--bll);color:var(--bld);cursor:pointer;" data-ntedit="'+n.id+'" onclick="event.stopPropagation()">수정</button>':'')+''+
+              (S.isAdmin?'<button style="font-size:11px;padding:2px 7px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;" data-ntdel="'+n.id+'" onclick="event.stopPropagation()">삭제</button>':'')+''+
+              '<span style="font-size:13px;color:var(--mu);">'+(isOpen?'▲':'▼')+'</span>'+
+            '</div>'+
+          '</div>'+
+          // 본문 (펼쳤을 때)
+          (isOpen?
+            '<div style="border-top:1px solid #F9EDF5;">'+
+              (n.body?'<div style="font-size:14px;padding:.75rem 1rem;line-height:1.6;white-space:pre-wrap;">'+esc(n.body)+'</div>':'')+
+              (n.imageUrl?'<div style="padding:.5rem 1rem 1rem;"><img src="'+esc(n.imageUrl)+'" style="width:100%;border-radius:var(--rs);display:block;" class="notice-img"></div>':'')+
+              (!n.body&&!n.imageUrl?'<div style="padding:.75rem 1rem;font-size:13px;color:var(--mu);">내용 없음</div>':'')+
+            '</div>'
+          :'')+
+        '</div>';
+      }
+    });
+  }
+  return h+'</div>';
+}
+
+function rCal(){
+  if(!S.loggedMember&&!S.isAdmin) return rML();
+  var yr=S.calYear,mo=S.calMonth;
+  var monthNames=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  var dayNames=['일','월','화','수','목','금','토'];
+  var firstDay=new Date(yr,mo,1).getDay();
+  var lastDate=new Date(yr,mo+1,0).getDate();
+  var today=new Date();
+  var todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+
+  var h='<div class="stack">';
+  // 헤더
+  h+='<div style="background:linear-gradient(135deg,var(--pr),#7B2FF7);border-radius:var(--r);padding:1rem;color:#fff;">'+
+    '<div class="rb">'+
+      '<button id="cal-prev" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:20px;padding:5px 14px;cursor:pointer;font-size:16px;">‹</button>'+
+      '<div style="font-size:18px;font-weight:700;">'+yr+'년 '+monthNames[mo]+'</div>'+
+      '<button id="cal-next" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:20px;padding:5px 14px;cursor:pointer;font-size:16px;">›</button>'+
+    '</div></div>';
+
+  // 관리자 일정 추가 폼
+  if(S.isAdmin){
+    h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);padding:.875rem 1rem;">'+
+      '<div style="font-size:13px;font-weight:600;color:var(--pr);margin-bottom:8px;">+ 일정 추가</div>'+
+      '<div style="display:flex;flex-direction:column;gap:8px;">'+
+        '<input type="text" id="ev-title" class="ainp" placeholder="일정 제목" style="width:100%;">'+
+        '<div style="display:flex;gap:8px;align-items:center;">'+
+          '<div style="flex:1;"><div style="font-size:11px;color:var(--mu);margin-bottom:3px;">시작일</div>'+
+          '<input type="date" id="ev-start" class="ainp" style="width:100%;padding:.5rem .75rem;font-size:13px;"></div>'+
+          '<div style="font-size:16px;color:var(--mu);margin-top:18px;">~</div>'+
+          '<div style="flex:1;"><div style="font-size:11px;color:var(--mu);margin-bottom:3px;">종료일 <span style="color:var(--or);">(하루면 비워두기)</span></div>'+
+          '<input type="date" id="ev-end" class="ainp" style="width:100%;padding:.5rem .75rem;font-size:13px;"></div>'+
+        '</div>'+
+        '<div style="display:flex;gap:8px;">'+
+          '<select id="ev-color" style="flex:1;padding:.6rem .75rem;border-radius:var(--rs);border:1.5px solid var(--br);font-size:13px;background:var(--wh);margin:0;">'+
+            '<option value="#E91E8C">🩷 분홍</option>'+
+            '<option value="#3B82F6">💙 파랑</option>'+
+            '<option value="#22C55E">💚 초록</option>'+
+            '<option value="#F59E0B">🧡 주황</option>'+
+            '<option value="#7B2FF7">💜 보라</option>'+
+          '</select>'+
+          '<button class="abtn" id="ev-add">추가</button>'+
+        '</div>'+
+      '</div></div>';
+  }
+
+  // 달력 그리드
+  h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);overflow:hidden;">';
+  // 요일 헤더
+  h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--prl);">';
+  dayNames.forEach(function(d,i){
+    h+='<div style="text-align:center;padding:.5rem 0;font-size:12px;font-weight:700;color:'+(i===0?'var(--rd)':i===6?'var(--bl)':'var(--tx)')+';">'+d+'</div>';
+  });
+  h+='</div>';
+  // 날짜 그리드
+  h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);">';
+  for(var i=0;i<firstDay;i++) h+='<div style="min-height:60px;border-top:1px solid #F9EDF5;"></div>';
+  for(var d=1;d<=lastDate;d++){
+    var dateStr=yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var dayEvs=Object.values(S.events).filter(function(e){
+      var s=e.startDate||e.date;var en=e.endDate||s;
+      return dateStr>=s&&dateStr<=en;
+    });
+    var isToday=dateStr===todayStr;
+    var dow=(firstDay+d-1)%7;
+    h+='<div style="min-height:60px;border-top:1px solid #F9EDF5;padding:3px;'+(isToday?'background:var(--prl);':'')+'">'+
+      '<div style="font-size:12px;font-weight:'+(isToday?'700':'400')+';color:'+(isToday?'var(--pr)':dow===0?'var(--rd)':dow===6?'var(--bl)':'var(--tx)')+';margin-bottom:2px;">'+d+'</div>';
+    dayEvs.forEach(function(ev){
+      var s=ev.startDate||ev.date;var en=ev.endDate||s;
+      var isStart=dateStr===s;var isEnd=dateStr===en;var isSingle=s===en;
+      var br=isSingle?'4px':(isStart?'4px 0 0 4px':(isEnd?'0 4px 4px 0':'0'));
+      var label=isStart?esc(ev.title.length>8?ev.title.slice(0,8)+'...':ev.title):'';
+      h+='<div style="font-size:10px;font-weight:600;color:#fff;background:'+ev.color+';border-radius:'+br+';padding:1px 4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:'+(isStart?1:0.75)+';" title="'+esc(ev.title)+'">'+
+        label+
+        (S.isAdmin&&(isStart||isSingle)?'<span class="ev-del" data-evid="'+ev.id+'" style="float:right;cursor:pointer;opacity:.7;margin-left:2px;">✕</span>':'')+
+      '</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div></div>';
+
+  // 이번달 일정 목록
+  var moPrefix=yr+'-'+String(mo+1).padStart(2,'0');
+  var moEvs=Object.values(S.events).filter(function(e){
+    var s=e.startDate||e.date;var en=e.endDate||s;
+    return s.startsWith(moPrefix)||en.startsWith(moPrefix)||(s<moPrefix&&en>moPrefix+'-31');
+  }).sort(function(a,b){var sa=a.startDate||a.date;var sb=b.startDate||b.date;return sa>sb?1:-1;});
+  if(moEvs.length){
+    h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);padding:.875rem 1rem;">'+
+      '<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:8px;">이번 달 일정</div>';
+    moEvs.forEach(function(ev){
+      var sd=ev.startDate||ev.date;var ed=ev.endDate||sd;
+      var d1=new Date(sd);var dow2=d1.getDay();
+      var dowName=['일','월','화','수','목','금','토'][dow2];
+      var dateDisplay=sd===ed?sd.slice(5).replace('-','/')+'('+dowName+')':sd.slice(5).replace('-','/') + ' ~ ' + ed.slice(5).replace('-','/');
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:.4rem 0;border-bottom:1px solid #F9EDF5;">'+
+        '<div style="width:10px;height:10px;border-radius:50%;background:'+ev.color+';flex-shrink:0;"></div>'+
+        '<span style="font-size:12px;color:var(--mu);white-space:nowrap;">'+dateDisplay+'</span>'+
+        '<span style="font-size:13px;font-weight:500;flex:1;">'+esc(ev.title)+'</span>'+
+        (S.isAdmin?'<button class="ev-del" data-evid="'+ev.id+'" style="font-size:11px;padding:2px 6px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;">삭제</button>':'')+
+      '</div>';
+    });
+    h+='</div>';
+  }
+  return h+'</div>';
+}
+
 function rCP(){
   if(!S.loggedMember)return rML();
   var m=S.loggedMember;
