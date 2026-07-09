@@ -1379,6 +1379,16 @@ function rST(){
         '<input type="text" id="ns-newcat" class="ainp" placeholder="새 카테고리 이름" style="width:100%;display:none;">'+
       '</div></div>';
 
+    // ── 새 루틴 추가 ──
+    h+='<div style="background:var(--wh);border:1.5px solid #BBF7D0;border-radius:var(--r);padding:.875rem 1rem;">'+
+      '<div style="font-size:13px;font-weight:600;color:#16A34A;margin-bottom:8px;">✅ 새 루틴 추가</div>'+
+      '<div style="display:flex;gap:8px;">'+
+        '<input type="text" id="nr-name" class="ainp" placeholder="루틴 이름 (예: 영어 10분)" style="flex:1;">'+
+        '<button class="abtn" id="add-routine" style="background:linear-gradient(135deg,#16A34A,#15803D);">추가</button>'+
+      '</div>'+
+      '<div style="font-size:11px;color:var(--mu);margin-top:6px;">카테고리: 루틴 체크 (자동)</div>'+
+    '</div>';
+
     cats.forEach(function(cat){
       var catStudies=S.studies.filter(function(s){return s.cat===cat;});
       var ci2=cats.indexOf(cat);
@@ -2109,6 +2119,19 @@ function bAll(){
     S.studies.push({id:'s'+Date.now().toString(36),name:name,cat:cat,active:true,applyOpen:false,dayOfWeek:'',bandUrl:'',weeks:[{num:1,locked:false,materialUrl:''}]});
     if(S.catOrder.indexOf(cat)<0)S.catOrder.push(cat);
     if(ni)ni.value='';if(ci)ci.value='';if(nci){nci.value='';nci.style.display='none';}persist();
+  });
+  // 루틴 추가
+  on('add-routine',function(){
+    var ni=g('nr-name');
+    var name=ni?ni.value.trim():'';
+    if(!name){alert('루틴 이름을 입력해주세요');return;}
+    if(S.studies.filter(function(x){return x.name===name;}).length){alert('같은 이름이 이미 있어요!');return;}
+    var cat='루틴 체크';
+    S.studies.push({id:'r'+Date.now().toString(36),name:name,cat:cat,active:true,applyOpen:false,dayOfWeek:'',bandUrl:'',weeks:[{num:1,locked:false,materialUrl:''}]});
+    if(S.catOrder.indexOf(cat)<0)S.catOrder.unshift(cat);
+    if(ni)ni.value='';
+    showToast('✅ 루틴이 추가됐어요!','success');
+    persist();
   });
   // 멤버 관리
   var nm=g('nm');if(nm){nm.addEventListener('input',function(e){S.newMember=e.target.value;});nm.addEventListener('keydown',function(e){if(e.key==='Enter')doAM();});}
