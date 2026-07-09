@@ -892,8 +892,6 @@ function rHabitSection(m){
     allH.push({hid:ahid,name:ah.name,isAdmin:true,checks:ck.checks||{},comments:ck.comments||{}});
   });
 
-  if(!allH.length&&!S.isAdmin)return '';
-
   var h='<div class="sec rb" style="padding:.875rem;margin-top:8px;">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
   h+='<div style="font-size:13px;font-weight:700;color:var(--pr);">🌱 오늘의 습관</div>';
@@ -901,7 +899,7 @@ function rHabitSection(m){
   h+='</div>';
 
   if(!allH.length){
-    h+='<div style="text-align:center;color:var(--mu);font-size:12px;padding:.5rem;">등록된 습관이 없어요. 습관 관리에서 추가해보세요!</div>';
+    h+='<div style="text-align:center;color:var(--mu);font-size:12px;padding:.5rem 0;">등록된 습관이 없어요 🌱<br><span style="font-size:11px;">습관 관리 버튼을 눌러 추가해보세요</span></div>';
   } else {
     allH.forEach(function(item){
       var checkedToday=item.checks[todayKey]===true;
