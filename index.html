@@ -700,10 +700,8 @@ function rCI(){
     ciCats.sort(function(a,b){var ia=S.catOrder.indexOf(a),ib=S.catOrder.indexOf(b);if(ia<0)ia=999;if(ib<0)ib=999;return ia-ib;});
   }
   ciCats.forEach(function(cat){
-    // 루틴 체크는 배정 여부 무관하게 전체 표시
-    var catS=(cat==='루틴 체크')
-      ?S.studies.filter(function(s){return s.active&&s.cat==='루틴 체크';})
-      :my.filter(function(s){return s.cat===cat;});
+    // 루틴 체크도 배정된 멤버만 표시
+    var catS=my.filter(function(s){return s.cat===cat;});
     var isCatOpen=S.expandedCat[cat]!==false;
     h+='<div style="display:flex;align-items:center;gap:6px;padding:.4rem .75rem;cursor:pointer;border-radius:var(--rs);background:var(--bgd);border:1px solid var(--br);" data-cicattog="'+esc(cat)+'">'+
       '<span style="font-size:12px;font-weight:700;color:var(--pr);flex:1;">'+esc(cat)+'</span>'+
@@ -711,9 +709,6 @@ function rCI(){
       '<span style="font-size:12px;color:var(--mu);">'+(isCatOpen?'▲':'▼')+'</span>'+
     '</div>';
     if(!isCatOpen){return;}
-    if(cat==='루틴 체크'&&!catS.length){
-      h+='<div style="text-align:center;padding:.75rem;color:var(--mu);font-size:12px;">루틴이 없어요. 설정에서 추가해보세요 ✅</div>';
-    }
     catS.forEach(function(s){
       // 루틴 체크는 날짜형 렌더링
       if(cat==='루틴 체크'){h+=rRoutineStudy(s,m);return;}
@@ -845,9 +840,7 @@ function rMP(){
     mpCats.sort(function(a,b){var ia=S.catOrder.indexOf(a),ib=S.catOrder.indexOf(b);if(ia<0)ia=999;if(ib<0)ib=999;return ia-ib;});
   }
   mpCats.forEach(function(cat){
-    var catS=(cat==='루틴 체크')
-      ?S.studies.filter(function(s){return s.active&&s.cat==='루틴 체크';})
-      :my.filter(function(s){return s.cat===cat;});
+    var catS=my.filter(function(s){return s.cat===cat;});
     var isCatOpen=S.expandedCat['mp_'+cat]!==false;
     // 카테고리별 합산
     var catDn=0,catTw=0;
@@ -884,7 +877,7 @@ function rMP(){
   });
 
   // 루틴 체크 현황 - 월별 달력
-  var rtnStudies=S.studies.filter(function(s){return s.active&&s.cat==='루틴 체크';});
+  var rtnStudies=S.studies.filter(function(s){return s.active&&s.cat==='루틴 체크'&&(m.studyIds||[]).indexOf(s.id)>=0;});
   if(rtnStudies.length){
     var today=new Date();
     var mpRtnYM=S.mpRtnYM||(today.getFullYear()+'-'+(today.getMonth()+1+'').padStart(2,'0'));
