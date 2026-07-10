@@ -196,6 +196,23 @@ function fbSaveNotices(d){
 function ckKey(sid,wn,mid){return sid+'__'+wn+'__'+mid;}
 function ck(sid,wn,mid){return S.checkins[ckKey(sid,wn,mid)]||null;}
 function setCk(sid,wn,mid,val){var k=ckKey(sid,wn,mid);if(val)S.checkins[k]=val;else delete S.checkins[k];}
+// 루틴 날짜형 체크인 (키: sid+'__date__'+dateKey+'__'+mid)
+function rtnCkKey(sid,dk,mid){return sid+'__date__'+dk+'__'+mid;}
+function rtnCk(sid,dk,mid){return S.checkins[rtnCkKey(sid,dk,mid)]||null;}
+function setRtnCk(sid,dk,mid,val){var k=rtnCkKey(sid,dk,mid);if(val)S.checkins[k]=val;else delete S.checkins[k];}
+// 이번주 월요일 날짜 반환
+function getThisWeekMonday(){
+  var d=new Date();d.setHours(0,0,0,0);
+  var day=d.getDay();var diff=day===0?-6:1-day;
+  d.setDate(d.getDate()+diff);return d;
+}
+// 날짜 → 'YYYY-MM-DD'
+function toDateKey(d){return d.getFullYear()+'-'+(d.getMonth()+1+'').padStart(2,'0')+'-'+(d.getDate()+'').padStart(2,'0');}
+// 날짜 → '26년 7월 10일(금)'
+function toKorDate(d){
+  var days=['일','월','화','수','목','금','토'];
+  return (d.getFullYear()%100)+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일('+days[d.getDay()]+')';
+}
 function allWeeks(s){return s.weeks||[];}
 function openWeeks(s){return allWeeks(s).filter(function(w){return !w.locked;});}
 function isStudyEnded(s){return s.cat&&s.cat.replace(/\s/g,'').indexOf('종료')>=0;}
@@ -402,7 +419,7 @@ var S={
   isAdmin:false,loggedMember:null,adminErr:'',memberErr:'',selMemId:'',
   newMember:'',expandedMem:null,expandedStudy:null,expandedMemCat:{},expandedMemSt:{},expandedVmCat:{},expandedVmSt:{},rptTab:'chart',
   chgErr:'',chgOk:'',viewMemberId:null,
-  settingsTab:'study',expandedWeek:null,expandedCI:{},dragSid:null,catOrder:[],expandedCat:{},
+  settingsTab:'study',expandedWeek:null,expandedCI:{},routineWeekOffset:0,routineCalSid:null,routineCalMem:null,routineCalYM:'',dragSid:null,catOrder:[],expandedCat:{},
   calYear:new Date().getFullYear(),calMonth:new Date().getMonth(),events:{},notices:{},
   editNoticeId:null,expandedNotice:{},expandedSnotice:{},editSnoticeId:null,expandedWnote:{},expandedStudyMem:{},editNoticeId:null,expandedNotice:{},
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
@@ -451,7 +468,12 @@ function rApp(){
   if(!im&&!ia)h+='<button class="tab on" style="cursor:default;pointer-events:none;">로그인 후 이용</button>';
   h+='</div>';
   var pages={ci:rCI,mp:rMP,apply:rApply,notice:rNotice,cal:rCal,cp:rCP,overall:rOV,report:rRP,settings:rST,mlogin:rML,alogin:rAL};
-  return h+(pages[S.tab]||rML)();
+  var pageContent=(pages[S.tab]||rML)();
+  // 루틴 달력 모달
+  if(S.routineCalSid&&S.routineCalMem){
+    pageContent+=rRoutineCal(S.routineCalSid,S.routineCalMem,S.routineCalYM);
+  }
+  return h+pageContent;
 }
 function rML(){
   var sorted=S.members.slice().sort(function(a,b){return a.name.localeCompare(b.name,'ko');});
@@ -469,6 +491,127 @@ function rAL(){
     (S.adminErr?'<p class="err">'+esc(S.adminErr)+'</p>':'')+
     '<button class="abtn full" id="adl">로그인</button></div></div></div>';
 }
+// ── 루틴 체크 날짜형 렌더링 ──
+function rRoutineStudy(s, m){
+  var offset=S.routineWeekOffset||0;
+  var mon=getThisWeekMonday();
+  mon.setDate(mon.getDate()+offset*7);
+  var days=[];
+  for(var i=0;i<7;i++){
+    var d=new Date(mon);d.setDate(mon.getDate()+i);
+    days.push(d);
+  }
+  var today=new Date();today.setHours(0,0,0,0);
+  var todayKey=toDateKey(today);
+
+  var h='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);overflow:hidden;margin-left:4px;margin-bottom:6px;">';
+  // 헤더
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;cursor:pointer;" data-expci="'+s.id+'">';
+  h+='<span style="font-size:14px;font-weight:700;">'+esc(s.name)+'</span>';
+  var doneCnt=days.filter(function(d){return rtnCk(s.id,toDateKey(d),m.id)==='done';}).length;
+  h+='<span style="font-size:12px;color:var(--pr);font-weight:700;">'+doneCnt+'/7일</span>';
+  h+='</div>';
+
+  if(S.expandedCI[s.id]){
+    h+='<div style="padding:0 1rem .875rem;">';
+    // 주 네비게이션
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
+    h+='<button data-rtn-week="-1" style="padding:4px 10px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:12px;">◀</button>';
+    h+='<span style="font-size:12px;font-weight:700;color:var(--pr);">'+toKorDate(mon)+' ~ '+toKorDate(days[6])+'</span>';
+    var nextMon=new Date(mon);nextMon.setDate(mon.getDate()+7);
+    var canNext=nextMon<=today;
+    h+='<button data-rtn-week="+1" style="padding:4px 10px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:12px;opacity:'+(canNext?'1':'0.3')+';pointer-events:'+(canNext?'auto':'none')+';">▶</button>';
+    h+='</div>';
+    // 7일 목록
+    var dayNames=['월','화','수','목','금','토','일'];
+    days.forEach(function(d,i){
+      var dk=toDateKey(d);
+      var st=rtnCk(s.id,dk,m.id);
+      var isTodayD=dk===todayKey;
+      var isFuture=d>today;
+      var rowBg=isTodayD?'var(--prl)':st==='done'?'#F0FDF4':st==='vacation'?'#EFF6FF':'var(--wh)';
+      var borderCol=isTodayD?'var(--pr)':st==='done'?'#BBF7D0':st==='vacation'?'#BFDBFE':'#F3F4F6';
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;border:1.5px solid '+borderCol+';background:'+rowBg+';margin-bottom:4px;">';
+      h+='<span style="font-size:12px;font-weight:700;min-width:20px;color:'+(isTodayD?'var(--pr)':i>=5?'#EF4444':'var(--tx)')+';">'+(isTodayD?'⭐':'')+dayNames[i]+'</span>';
+      h+='<span style="font-size:11px;color:var(--mu);min-width:50px;">'+toKorDate(d)+'</span>';
+      if(!isFuture){
+        h+='<button data-rtn-ck="'+s.id+'__'+dk+'__'+m.id+'__done" style="padding:3px 10px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;background:'+(st==='done'?'var(--pr)':'#DCFCE7')+';color:'+(st==='done'?'#fff':'#16A34A')+';">✅ 인증</button>';
+        h+='<button data-rtn-ck="'+s.id+'__'+dk+'__'+m.id+'__vacation" style="padding:3px 10px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;background:'+(st==='vacation'?'#2563EB':'#DBEAFE')+';color:'+(st==='vacation'?'#fff':'#2563EB')+';">🏖️ 휴가</button>';
+      } else {
+        h+='<span style="font-size:11px;color:var(--mu);">예정</span>';
+      }
+      h+='</div>';
+    });
+    // 관리 버튼
+    h+='<button data-rtn-mgr="'+s.id+'" style="width:100%;margin-top:8px;padding:6px;border-radius:var(--rs);border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:12px;color:var(--mu);">📅 월별 현황 보기</button>';
+    h+='</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+// ── 루틴 월별 달력 모달 ──
+function rRoutineCal(sid, mid, ym){
+  var s=S.studies.filter(function(x){return x.id===sid;})[0];
+  var m=S.members.filter(function(x){return x.id===mid;})[0];
+  if(!s||!m)return '';
+  var today=new Date();
+  var ymKey=ym||(today.getFullYear()+'-'+(today.getMonth()+1+'').padStart(2,'0'));
+  var yma=ymKey.split('-');var yr=+yma[0],mo=+yma[1]-1;
+  var firstDay=new Date(yr,mo,1).getDay();
+  if(firstDay===0)firstDay=7; // 월요일 시작
+  firstDay=firstDay-1;
+  var lastDate=new Date(yr,mo+1,0).getDate();
+  var prevYm=mo===0?(yr-1)+'-12':yr+'-'+(mo+'').padStart(2,'0');
+  var nextYm=mo===11?(yr+1)+'-01':yr+'-'+(mo+2+'').padStart(2,'0');
+  var canNext=new Date(yr,mo+1,1)<=today;
+
+  var h='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;" id="rtn-cal-modal">';
+  h+='<div style="background:var(--wh);border-radius:var(--r);padding:1.25rem;width:min(360px,92vw);max-height:90vh;overflow-y:auto;">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
+  h+='<span style="font-size:14px;font-weight:700;color:var(--pr);">📅 '+esc(s.name)+'</span>';
+  h+='<button id="rtn-cal-close" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--mu);">✕</button>';
+  h+='</div>';
+  h+='<div style="font-size:12px;color:var(--mu);margin-bottom:12px;">'+esc(m.name)+'님의 루틴 현황</div>';
+  // 월 네비
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
+  h+='<button data-rtn-cal-ym="'+prevYm+'__'+sid+'__'+mid+'" style="padding:4px 10px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:12px;">◀</button>';
+  h+='<span style="font-size:13px;font-weight:700;color:var(--pr);">'+yr+'년 '+(mo+1)+'월</span>';
+  h+='<button data-rtn-cal-ym="'+nextYm+'__'+sid+'__'+mid+'" style="padding:4px 10px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:12px;opacity:'+(canNext?'1':'0.3')+';pointer-events:'+(canNext?'auto':'none')+';">▶</button>';
+  h+='</div>';
+  // 달력 헤더
+  h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;">';
+  ['월','화','수','목','금','토','일'].forEach(function(d,i){
+    h+='<div style="text-align:center;font-size:10px;font-weight:700;color:'+(i>=5?'#EF4444':'var(--mu)')+';">'+d+'</div>';
+  });
+  h+='</div>';
+  // 달력 날짜
+  h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;">';
+  for(var i=0;i<firstDay;i++)h+='<div></div>';
+  var doneCnt=0,totalCnt=0;
+  for(var d=1;d<=lastDate;d++){
+    var dk=yr+'-'+(mo+1+'').padStart(2,'0')+'-'+(d+'').padStart(2,'0');
+    var st=rtnCk(sid,dk,mid);
+    var dateObj=new Date(yr,mo,d);
+    var isFuture=dateObj>today;
+    var dow=dateObj.getDay();
+    var isWeekend=dow===0||dow===6;
+    if(!isFuture)totalCnt++;
+    if(st==='done')doneCnt++;
+    var bg=st==='done'?'var(--pr)':st==='vacation'?'#3B82F6':isWeekend?'#FEF2F2':'#F8F9FA';
+    var txtCol=st==='done'||st==='vacation'?'#fff':isWeekend?'#EF4444':'var(--tx)';
+    h+='<div style="aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:'+bg+';color:'+txtCol+';'+(isFuture?'opacity:.3':'')+';">'+d+'</div>';
+  }
+  h+='</div>';
+  // 요약
+  var pct=totalCnt?Math.round(doneCnt/totalCnt*100):0;
+  h+='<div style="margin-top:12px;padding:.75rem;background:var(--prl);border-radius:var(--rs);text-align:center;">';
+  h+='<div style="font-size:13px;font-weight:700;color:var(--pr);">✅ '+doneCnt+'일 달성 / 전체 '+totalCnt+'일 · '+pct+'%</div>';
+  h+='</div>';
+  h+='</div></div>';
+  return h;
+}
+
 function rCI(){
   var m;
   if(S.isAdmin){
@@ -508,9 +651,10 @@ function rCI(){
       h+='<div style="text-align:center;padding:.75rem;color:var(--mu);font-size:12px;">루틴이 없어요. 설정에서 추가해보세요 ✅</div>';
     }
     catS.forEach(function(s){
+      // 루틴 체크는 날짜형 렌더링
+      if(cat==='루틴 체크'){h+=rRoutineStudy(s,m);return;}
       var aw=allWeeks(s);var isExpCI=S.expandedCI[s.id]===true;
-      var ss=(cat==='루틴 체크')?{dn:0,vc:0,t:aw.length,pct:0}:sMSt(s,m);
-      if(cat==='루틴 체크'){aw.forEach(function(w){var st=ck(s.id,w.num,m.id);if(st==='done')ss.dn++;else if(st==='vacation')ss.vc++;});ss.pct=ss.t?Math.round(ss.dn/ss.t*100):0;}
+      var ss=sMSt(s,m);
       h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);overflow:hidden;margin-left:4px;">';
       h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:.875rem 1rem;cursor:pointer;" data-expci="'+s.id+'">'+
         '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+
@@ -675,6 +819,34 @@ function rMP(){
     });
   });
 
+  // 루틴 체크 현황
+  var rtnStudies=S.studies.filter(function(s){return s.active&&s.cat==='루틴 체크';});
+  if(rtnStudies.length){
+    h+='<div class="sec rb" style="padding:.875rem;">';
+    h+='<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:10px;">✅ 루틴 체크 현황 <span style="font-size:11px;font-weight:400;color:var(--mu);">(이번 달)</span></div>';
+    var today=new Date();var yr=today.getFullYear();var mo=today.getMonth();
+    var lastDate=new Date(yr,mo+1,0).getDate();
+    rtnStudies.forEach(function(s){
+      var done=0,total=0;
+      for(var d=1;d<=lastDate;d++){
+        var dk=yr+'-'+(mo+1+'').padStart(2,'0')+'-'+(d+'').padStart(2,'0');
+        var dt=new Date(yr,mo,d);if(dt>today)break;
+        total++;
+        if(rtnCk(s.id,dk,m.id)==='done')done++;
+      }
+      var pct=total?Math.round(done/total*100):0;
+      var col=pct>=80?'var(--pr)':pct>=50?'#F59E0B':'var(--mu)';
+      h+='<div style="margin-bottom:10px;">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+      h+='<span style="font-size:13px;font-weight:700;">'+esc(s.name)+'</span>';
+      h+='<span style="font-size:12px;font-weight:700;color:'+col+';">'+done+'/'+total+'일 · '+pct+'%</span>';
+      h+='</div>';
+      h+='<div style="height:8px;background:#F3F4F6;border-radius:4px;overflow:hidden;">';
+      h+='<div style="width:'+pct+'%;height:100%;background:'+col+';border-radius:4px;"></div>';
+      h+='</div></div>';
+    });
+    h+='</div>';
+  }
   return h+'</div>';
 }
 function rApply(){
@@ -1836,6 +2008,43 @@ function bAll(){
     var c=el.dataset.cicattog;S.expandedCat[c]=S.expandedCat[c]===false?true:false;render();
   });});
   // expci handled by app-level delegation});
+  // ── 루틴 체크 이벤트 ──
+  // 루틴 주 이동
+  qsa('[data-rtn-week]',function(el){el.addEventListener('click',function(e){
+    e.stopPropagation();
+    var v=parseInt(el.dataset.rtnWeek);
+    S.routineWeekOffset=(S.routineWeekOffset||0)+v;
+    render();
+  });});
+  // 루틴 인증/휴가 버튼
+  qsa('[data-rtn-ck]',function(el){el.addEventListener('click',function(e){
+    e.stopPropagation();
+    var p=el.dataset.rtnCk.split('__');var sid=p[0],dk=p[1],mid=p[2],val=p[3];
+    var cur=rtnCk(sid,dk,mid);
+    setRtnCk(sid,dk,mid,cur===val?null:val);
+    if(cur!==val)showCelebration('✅');
+    persist();render();
+  });});
+  // 루틴 월별 관리 버튼
+  qsa('[data-rtn-mgr]',function(el){el.addEventListener('click',function(e){
+    e.stopPropagation();
+    var sid=el.dataset.rtnMgr;
+    var m=S.loggedMember||(S.isAdmin?S.members.filter(function(x){return x.name&&x.name.indexOf('강둥맘')>=0;})[0]:null);
+    if(!m)return;
+    S.routineCalSid=sid;S.routineCalMem=m.id;S.routineCalYM='';
+    render();
+  });});
+  // 루틴 달력 월 이동
+  qsa('[data-rtn-cal-ym]',function(el){el.addEventListener('click',function(e){
+    e.stopPropagation();
+    var p=el.dataset.rtnCalYm.split('__');
+    S.routineCalYM=p[0];S.routineCalSid=p[1];S.routineCalMem=p[2];
+    render();
+  });});
+  // 루틴 달력 닫기
+  on('rtn-cal-close',function(){S.routineCalSid=null;S.routineCalMem=null;S.routineCalYM='';render();});
+  var rtnModal=document.getElementById('rtn-cal-modal');
+  if(rtnModal)rtnModal.addEventListener('click',function(e){if(e.target===rtnModal){S.routineCalSid=null;S.routineCalMem=null;S.routineCalYM='';render();}});
   // 인증 버튼
   qsa('[data-ck]',function(el){el.addEventListener('click',function(){
     var p=el.dataset.ck.split('__');var mid=p[0],sid=p[1],wn=+p[2],val=p[3];
