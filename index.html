@@ -850,7 +850,50 @@ function rMP(){
         '<span style="font-size:11px;color:var(--mu);">'+catS.length+'개</span>'+
         '<span style="font-size:12px;color:var(--mu);margin-left:4px;">'+(isCatOpen?'▲':'▼')+'</span>'+
       '</div>';
-      if(isCatOpen)h+=rHabitStatusSection(m);
+      if(isCatOpen){
+        // 루틴 현황 - 월별 달력 (인라인)
+        var today2=new Date();
+        var mpRtnYM2=S.mpRtnYM||(today2.getFullYear()+'-'+(today2.getMonth()+1+'').padStart(2,'0'));
+        var yma2=mpRtnYM2.split('-');var yr2=+yma2[0],mo2=+yma2[1]-1;
+        var prevYm2=mo2===0?(yr2-1)+'-12':yr2+'-'+(mo2+'').padStart(2,'0');
+        var nextYm2=mo2===11?(yr2+1)+'-01':yr2+'-'+(mo2+2+'').padStart(2,'0');
+        var canNext2=new Date(yr2,mo2+1,1)<=today2;
+        var lastDate2=new Date(yr2,mo2+1,0).getDate();
+        catS.forEach(function(s){
+          var firstDay2=new Date(yr2,mo2,1).getDay();if(firstDay2===0)firstDay2=7;firstDay2--;
+          var done2=0,total2=0;
+          for(var d=1;d<=lastDate2;d++){var dt2=new Date(yr2,mo2,d);if(dt2>today2)break;total2++;if(rtnCk(s.id,yr2+'-'+(mo2+1+'').padStart(2,'0')+'-'+(d+'').padStart(2,'0'),m.id)==='done')done2++;}
+          var pct2=total2?Math.round(done2/total2*100):0;
+          var col2=pct2>=80?'var(--pr)':pct2>=50?'#F59E0B':'var(--mu)';
+          var badge2=getRoutineMonthBadge(s.id,m.id,yr2,mo2);
+          h+='<div style="margin-bottom:14px;">';
+          h+='<div style="display:flex;align-items:center;gap:6px;justify-content:space-between;margin-bottom:6px;">';
+          h+='<div style="display:flex;align-items:center;gap:6px;">';
+          h+='<button data-mp-rtn-ym="'+prevYm2+'" style="padding:2px 8px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:11px;">◀</button>';
+          h+='<span style="font-size:12px;font-weight:700;color:var(--pr);">'+yr2+'년 '+(mo2+1)+'월</span>';
+          h+='<button data-mp-rtn-ym="'+nextYm2+'" style="padding:2px 8px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:11px;opacity:'+(canNext2?'1':'0.3')+';pointer-events:'+(canNext2?'auto':'none')+';">▶</button>';
+          h+='</div>';
+          h+='<span style="font-size:12px;font-weight:700;color:var(--tx);">'+esc(s.name)+(badge2?' 💎':'')+'</span>';
+          h+='<span style="font-size:12px;font-weight:700;color:'+col2+';">'+done2+'/'+total2+'일 · '+pct2+'%</span>';
+          h+='</div>';
+          h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">';
+          ['월','화','수','목','금','토','일'].forEach(function(dn,di){h+='<div style="text-align:center;font-size:9px;font-weight:700;color:'+(di>=5?'#EF4444':'var(--mu)')+';">'+dn+'</div>';});
+          h+='</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">';
+          for(var fi=0;fi<firstDay2;fi++)h+='<div></div>';
+          for(var d=1;d<=lastDate2;d++){
+            var dk2=yr2+'-'+(mo2+1+'').padStart(2,'0')+'-'+(d+'').padStart(2,'0');
+            var st2=rtnCk(s.id,dk2,m.id);var dt2b=new Date(yr2,mo2,d);var isFut=dt2b>today2;
+            var dow2=dt2b.getDay();var isWe2=dow2===0||dow2===6;
+            var bg2=st2==='done'?'var(--pr)':st2==='vacation'?'#3B82F6':isWe2?'#FEF2F2':'#F8F9FA';
+            var tc2=st2==='done'||st2==='vacation'?'#fff':isWe2?'#EF4444':'var(--tx)';
+            var mm2=rtnMemo(s.id,dk2,m.id);
+            h+='<div style="position:relative;"><div title="'+esc(mm2)+'" style="aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;background:'+bg2+';color:'+tc2+';'+(isFut?'opacity:.3':'')+'">'+d+'</div>';
+            if(mm2)h+='<div style="position:absolute;bottom:-1px;right:-1px;width:5px;height:5px;background:#F59E0B;border-radius:50%;border:1px solid #fff;"></div>';
+            h+='</div>';
+          }
+          h+='</div></div>';
+        });
+      }
       return;
     }
     // 일반 스터디 카테고리
