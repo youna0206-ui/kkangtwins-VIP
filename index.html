@@ -851,6 +851,7 @@ function rMP(){
         '<span style="font-size:12px;color:var(--mu);margin-left:4px;">'+(isCatOpen?'▲':'▼')+'</span>'+
       '</div>';
       if(isCatOpen){
+        h+='<div class="sec rb" style="padding:.875rem;margin-top:4px;">';
         // 루틴 현황 - 월별 달력 (인라인)
         var today2=new Date();
         var mpRtnYM2=S.mpRtnYM||(today2.getFullYear()+'-'+(today2.getMonth()+1+'').padStart(2,'0'));
@@ -893,6 +894,34 @@ function rMP(){
           }
           h+='</div></div>';
         });
+        // 멤버 현황
+        var rtnMembers=S.members.filter(function(mem){return catS.some(function(s){return(mem.studyIds||[]).indexOf(s.id)>=0;});});
+        if(rtnMembers.length>0){
+          catS.forEach(function(s){
+            var others=S.members.filter(function(mem){return mem.id!==m.id&&(mem.studyIds||[]).indexOf(s.id)>=0;});
+            if(!others.length)return;
+            h+='<div style="margin-top:12px;border-top:1px solid var(--br);padding-top:10px;">';
+            h+='<div style="font-size:12px;font-weight:700;color:var(--pr);margin-bottom:8px;">👥 '+esc(s.name)+' 멤버 현황</div>';
+            others.sort(function(a,b){
+              var pA=0,pB=0,tA=0,tB=0;
+              for(var d=1;d<=lastDate2;d++){var dt3=new Date(yr2,mo2,d);if(dt3>today2)break;tA++;tB++;var dk3=yr2+'-'+(mo2+1+'').padStart(2,'0')+'-'+(d+'').padStart(2,'0');if(rtnCk(s.id,dk3,a.id)==='done')pA++;if(rtnCk(s.id,dk3,b.id)==='done')pB++;}
+              return(tB?pB/tB:0)-(tA?pA/tA:0);
+            }).forEach(function(mem){
+              var d3=0,t3=0;
+              for(var d=1;d<=lastDate2;d++){var dt3=new Date(yr2,mo2,d);if(dt3>today2)break;t3++;var dk3=yr2+'-'+(mo2+1+'').padStart(2,'0')+'-'+(d+'').padStart(2,'0');if(rtnCk(s.id,dk3,mem.id)==='done')d3++;}
+              var p3=t3?Math.round(d3/t3*100):0;
+              var c3=p3>=80?'var(--pr)':p3>=50?'#F59E0B':'var(--mu)';
+              var b3=getRoutineMonthBadge(s.id,mem.id,yr2,mo2);
+              h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">';
+              h+='<span style="font-size:12px;min-width:80px;font-weight:600;">'+esc(mem.name)+(b3?' 💎':'')+'</span>';
+              h+='<div style="flex:1;height:7px;background:#F3F4F6;border-radius:4px;overflow:hidden;"><div style="width:'+p3+'%;height:100%;background:'+c3+';border-radius:4px;"></div></div>';
+              h+='<span style="font-size:11px;font-weight:700;color:'+c3+';min-width:36px;">'+p3+'%</span>';
+              h+='</div>';
+            });
+            h+='</div>';
+          });
+        }
+        h+='</div>';
       }
       return;
     }
