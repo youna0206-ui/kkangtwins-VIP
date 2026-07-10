@@ -676,6 +676,7 @@ function rRoutineCal(sid, mid, ym){
   return h;
 }
 
+
 function rCI(){
   var m;
   if(S.isAdmin){
@@ -1370,6 +1371,53 @@ function rOV(){
         })()+
       '</div></div>';
   });
+  // ── 루틴 현황 공개 섹션 ──
+  var rtnStudies2=S.studies.filter(function(s){return s.active&&s.cat==='루틴 체크';});
+  if(rtnStudies2.length){
+    var today2=new Date();
+    var ovRtnYM=S.ovRtnYM||(today2.getFullYear()+'-'+(today2.getMonth()+1+'').padStart(2,'0'));
+    var yma2=ovRtnYM.split('-');var yr2=+yma2[0],mo2=+yma2[1]-1;
+    var prevYm2=mo2===0?(yr2-1)+'-12':yr2+'-'+(mo2+'').padStart(2,'0');
+    var nextYm2=mo2===11?(yr2+1)+'-01':yr2+'-'+(mo2+2+'').padStart(2,'0');
+    var canNext2=new Date(yr2,mo2+1,1)<=today2;
+    var lastDate2=new Date(yr2,mo2+1,0).getDate();
+    h+='<div class="sec rb" style="padding:.875rem;margin-top:8px;">';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
+    h+='<div style="font-size:13px;font-weight:700;color:var(--pr);">✅ 루틴 현황 <span style="font-size:11px;font-weight:400;color:var(--mu);">'+yr2+'년 '+(mo2+1)+'월</span></div>';
+    h+='<div style="display:flex;align-items:center;gap:6px;">';
+    h+='<button data-ov-rtn-ym="'+prevYm2+'" style="padding:2px 8px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:11px;">◀</button>';
+    h+='<button data-ov-rtn-ym="'+nextYm2+'" style="padding:2px 8px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:11px;opacity:'+(canNext2?'1':'0.3')+';pointer-events:'+(canNext2?'auto':'none')+';">▶</button>';
+    h+='</div></div>';
+    rtnStudies2.forEach(function(s){
+      var enrolled2=S.members.filter(function(m){return(m.studyIds||[]).indexOf(s.id)>=0;});
+      if(!enrolled2.length)return;
+      h+='<div style="margin-bottom:14px;">';
+      h+='<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:6px;padding:4px 10px;background:var(--prl);border-radius:20px;display:inline-block;">'+esc(s.name)+'</div>';
+      var rows2=enrolled2.map(function(m){
+        var done2=0,total2=0;
+        for(var d=1;d<=lastDate2;d++){
+          var dt2=new Date(yr2,mo2,d);if(dt2>today2)break;
+          var dk2=yr2+'-'+(mo2+1+'').padStart(2,'0')+'-'+(d+'').padStart(2,'0');
+          total2++;if(rtnCk(s.id,dk2,m.id)==='done')done2++;
+        }
+        var pct2=total2?Math.round(done2/total2*100):0;
+        return{m:m,done:done2,total:total2,pct:pct2};
+      }).sort(function(a,b){return b.pct-a.pct;});
+      rows2.forEach(function(r){
+        var col2=r.pct>=80?'var(--pr)':r.pct>=50?'#F59E0B':'var(--mu)';
+        var badge2=getRoutineMonthBadge(s.id,r.m.id,yr2,mo2);
+        h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">';
+        h+='<span style="font-size:12px;min-width:80px;font-weight:600;">'+esc(r.m.name)+(badge2?' 💎':'')+'</span>';
+        h+='<div style="flex:1;height:8px;background:#F3F4F6;border-radius:4px;overflow:hidden;">';
+        h+='<div style="width:'+r.pct+'%;height:100%;background:'+col2+';border-radius:4px;"></div></div>';
+        h+='<span style="font-size:11px;font-weight:700;color:'+col2+';min-width:36px;">'+r.pct+'%</span>';
+        h+='<span style="font-size:10px;color:var(--mu);">'+r.done+'/'+r.total+'일</span>';
+        h+='</div>';
+      });
+      h+='</div>';
+    });
+    h+='</div>';
+  }
   return h+'</div>';
 }
 function bRows(){
@@ -2145,6 +2193,10 @@ function bAll(){
     S.routineCalYM=p[0];S.routineCalSid=p[1];S.routineCalMem=p[2];
     render();
   });});
+  // 전체현황 루틴 월 이동
+  qsa('[data-ov-rtn-ym]',function(el){el.addEventListener('click',function(){
+    S.ovRtnYM=el.dataset.ovRtnYm;render();
+  });});
   // 내 현황 루틴 월 이동
   qsa('[data-mp-rtn-ym]',function(el){el.addEventListener('click',function(){
     S.mpRtnYM=el.dataset.mpRtnYm;render();
@@ -2400,11 +2452,12 @@ function bAll(){
     if(!name){alert('루틴 이름을 입력해주세요');return;}
     if(S.studies.filter(function(x){return x.name===name;}).length){alert('같은 이름이 이미 있어요!');return;}
     var cat='루틴 체크';
-    S.studies.push({id:'r'+Date.now().toString(36),name:name,cat:cat,active:true,applyOpen:false,dayOfWeek:'',bandUrl:'',weeks:[{num:1,locked:false,materialUrl:''}]});
+    var newId='rtn_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+    S.studies.push({id:newId,name:name,cat:cat,active:true,applyOpen:false,dayOfWeek:'',bandUrl:'',weeks:[{num:1,locked:false,materialUrl:''}]});
     if(S.catOrder.indexOf(cat)<0)S.catOrder.unshift(cat);
     if(ni)ni.value='';
     showToast('✅ 루틴이 추가됐어요!','success');
-    persist();
+    persist();render();
   });
   // 멤버 관리
   var nm=g('nm');if(nm){nm.addEventListener('input',function(e){S.newMember=e.target.value;});nm.addEventListener('keydown',function(e){if(e.key==='Enter')doAM();});}
