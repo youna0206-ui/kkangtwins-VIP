@@ -535,17 +535,12 @@ function rRoutineStudy(s, m){
   h+='<span style="font-size:12px;color:var(--mu);cursor:pointer;" data-expci="'+s.id+'">'+(isExpCI?'▲':'▼')+'</span>';
   h+='</div>';
 
-  // 오늘 인증/휴가 + 메모
-  h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
-  h+='<span style="font-size:11px;color:var(--mu);">오늘 '+toKorDate(today)+'</span>';
-  h+='<button data-rtn-ck="'+s.id+'__'+todayKey+'__'+m.id+'__done" style="padding:4px 10px;border-radius:20px;border:none;cursor:pointer;font-size:12px;font-weight:700;background:'+(todaySt==='done'?'var(--pr)':'#DCFCE7')+';color:'+(todaySt==='done'?'#fff':'#16A34A')+';">✅ 인증</button>';
-  h+='<button data-rtn-ck="'+s.id+'__'+todayKey+'__'+m.id+'__vacation" style="padding:4px 10px;border-radius:20px;border:none;cursor:pointer;font-size:12px;font-weight:700;background:'+(todaySt==='vacation'?'#2563EB':'#DBEAFE')+';color:'+(todaySt==='vacation'?'#fff':'#2563EB')+';">🏖️ 휴가</button>';
-  h+='</div>';
-
-  // 오늘 메모 입력
-  h+='<div style="margin-top:6px;display:flex;align-items:center;gap:6px;">';
-  h+='<span style="font-size:11px;color:var(--mu);">📝</span>';
-  h+='<input data-rtn-memo="'+s.id+'__'+todayKey+'__'+m.id+'" placeholder="메모 (선택)" value="'+esc(todayMemo)+'" style="flex:1;font-size:12px;padding:4px 8px;border-radius:10px;border:1px solid var(--br);background:var(--wh);color:var(--tx);" maxlength="50">';
+  // 오늘: 날짜 + 인증/휴가 + 메모 한 줄
+  h+='<div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;">';
+  h+='<span style="font-size:11px;color:var(--mu);white-space:nowrap;flex-shrink:0;">오늘 '+toKorDate(today)+'</span>';
+  h+='<button data-rtn-ck="'+s.id+'__'+todayKey+'__'+m.id+'__done" style="padding:3px 9px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;flex-shrink:0;background:'+(todaySt==='done'?'var(--pr)':'#DCFCE7')+';color:'+(todaySt==='done'?'#fff':'#16A34A')+';">✅</button>';
+  h+='<button data-rtn-ck="'+s.id+'__'+todayKey+'__'+m.id+'__vacation" style="padding:3px 9px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;flex-shrink:0;background:'+(todaySt==='vacation'?'#2563EB':'#DBEAFE')+';color:'+(todaySt==='vacation'?'#fff':'#2563EB')+';">🏖️</button>';
+  h+='<input data-rtn-memo="'+s.id+'__'+todayKey+'__'+m.id+'" placeholder="메모..." value="'+esc(todayMemo)+'" style="flex:1;min-width:0;font-size:11px;padding:3px 7px;border-radius:10px;border:1px solid var(--br);background:var(--wh);color:var(--tx);" maxlength="40">';
   h+='</div>';
   h+='</div>';
 
@@ -576,25 +571,16 @@ function rRoutineStudy(s, m){
         var isFuture=d>today;
         var rowBg=isTodayD?'var(--prl)':st==='done'?'#F0FDF4':st==='vacation'?'#EFF6FF':'var(--wh)';
         var borderCol=isTodayD?'var(--pr)':st==='done'?'#BBF7D0':st==='vacation'?'#BFDBFE':'#F3F4F6';
-        h+='<div style="border-radius:10px;border:1.5px solid '+borderCol+';background:'+rowBg+';margin-bottom:4px;overflow:hidden;">';
-        // 날짜 행
-        h+='<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;">';
-        h+='<span style="font-size:11px;font-weight:700;min-width:16px;color:'+(isTodayD?'var(--pr)':i>=5?'#EF4444':'var(--tx)')+';">'+(isTodayD?'⭐':dayNames[i])+'</span>';
-        h+='<span style="font-size:11px;color:var(--mu);flex:1;">'+toKorDate(d)+'</span>';
+
+        h+='<div style="display:flex;align-items:center;gap:5px;padding:5px 6px;border-radius:10px;border:1.5px solid '+borderCol+';background:'+rowBg+';margin-bottom:4px;">';
+        h+='<span style="font-size:11px;font-weight:700;min-width:14px;color:'+(isTodayD?'var(--pr)':i>=5?'#EF4444':'var(--tx)')+';">'+(isTodayD?'⭐':dayNames[i])+'</span>';
+        h+='<span style="font-size:10px;color:var(--mu);white-space:nowrap;min-width:68px;">'+toKorDate(d)+'</span>';
         if(!isFuture){
-          h+='<button data-rtn-ck="'+s.id+'__'+dk+'__'+m.id+'__done" style="padding:2px 8px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;background:'+(st==='done'?'var(--pr)':'#DCFCE7')+';color:'+(st==='done'?'#fff':'#16A34A')+';">✅</button>';
-          h+='<button data-rtn-ck="'+s.id+'__'+dk+'__'+m.id+'__vacation" style="padding:2px 8px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;background:'+(st==='vacation'?'#2563EB':'#DBEAFE')+';color:'+(st==='vacation'?'#fff':'#2563EB')+';">🏖️</button>';
-          // 메모 아이콘 (있으면 표시)
-          if(memo)h+='<span title="'+esc(memo)+'" style="font-size:11px;">📝</span>';
+          h+='<button data-rtn-ck="'+s.id+'__'+dk+'__'+m.id+'__done" style="padding:2px 7px;border-radius:20px;border:none;cursor:pointer;font-size:10px;font-weight:700;flex-shrink:0;background:'+(st==='done'?'var(--pr)':'#DCFCE7')+';color:'+(st==='done'?'#fff':'#16A34A')+';">✅</button>';
+          h+='<button data-rtn-ck="'+s.id+'__'+dk+'__'+m.id+'__vacation" style="padding:2px 7px;border-radius:20px;border:none;cursor:pointer;font-size:10px;font-weight:700;flex-shrink:0;background:'+(st==='vacation'?'#2563EB':'#DBEAFE')+';color:'+(st==='vacation'?'#fff':'#2563EB')+';">🏖️</button>';
+          h+='<input data-rtn-memo="'+s.id+'__'+dk+'__'+m.id+'" placeholder="메모..." value="'+esc(memo)+'" style="flex:1;min-width:0;font-size:10px;padding:2px 6px;border-radius:8px;border:1px solid var(--br);background:var(--wh);color:var(--tx);" maxlength="40">';
         } else {
           h+='<span style="font-size:10px;color:var(--mu);">예정</span>';
-        }
-        h+='</div>';
-        // 메모 입력 (과거/오늘)
-        if(!isFuture){
-          h+='<div style="padding:0 8px 6px;display:flex;align-items:center;gap:4px;">';
-          h+='<input data-rtn-memo="'+s.id+'__'+dk+'__'+m.id+'" placeholder="메모..." value="'+esc(memo)+'" style="flex:1;font-size:11px;padding:3px 8px;border-radius:8px;border:1px solid var(--br);background:var(--wh);color:var(--tx);" maxlength="50">';
-          h+='</div>';
         }
         h+='</div>';
       });
