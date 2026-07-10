@@ -535,12 +535,12 @@ function rRoutineStudy(s, m){
   h+='<span style="font-size:12px;color:var(--mu);cursor:pointer;" data-expci="'+s.id+'">'+(isExpCI?'▲':'▼')+'</span>';
   h+='</div>';
 
-  // 오늘: 날짜 + 인증/휴가 + 메모 한 줄
-  h+='<div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;">';
-  h+='<span style="font-size:11px;color:var(--mu);white-space:nowrap;flex-shrink:0;">오늘 '+toKorDate(today)+'</span>';
-  h+='<button data-rtn-ck="'+s.id+'__'+todayKey+'__'+m.id+'__done" style="padding:3px 9px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;flex-shrink:0;background:'+(todaySt==='done'?'var(--pr)':'#DCFCE7')+';color:'+(todaySt==='done'?'#fff':'#16A34A')+';">✅</button>';
-  h+='<button data-rtn-ck="'+s.id+'__'+todayKey+'__'+m.id+'__vacation" style="padding:3px 9px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;flex-shrink:0;background:'+(todaySt==='vacation'?'#2563EB':'#DBEAFE')+';color:'+(todaySt==='vacation'?'#fff':'#2563EB')+';">🏖️</button>';
-  h+='<input data-rtn-memo="'+s.id+'__'+todayKey+'__'+m.id+'" placeholder="메모..." value="'+esc(todayMemo)+'" style="flex:1;min-width:0;font-size:11px;padding:3px 7px;border-radius:10px;border:1px solid var(--br);background:var(--wh);color:var(--tx);" maxlength="40">';
+  // 오늘: 날짜 + 인증/휴가(크게) + 메모(짧게)
+  h+='<div style="font-size:11px;color:var(--mu);margin-bottom:6px;">오늘 '+toKorDate(today)+'</div>';
+  h+='<div style="display:flex;align-items:center;gap:6px;">';
+  h+='<button data-rtn-ck="'+s.id+'__'+todayKey+'__'+m.id+'__done" style="flex:1;padding:8px 0;border-radius:var(--rs);border:none;cursor:pointer;font-size:14px;font-weight:700;background:'+(todaySt==='done'?'var(--pr)':'#DCFCE7')+';color:'+(todaySt==='done'?'#fff':'#16A34A')+';">✅ 인증</button>';
+  h+='<button data-rtn-ck="'+s.id+'__'+todayKey+'__'+m.id+'__vacation" style="flex:1;padding:8px 0;border-radius:var(--rs);border:none;cursor:pointer;font-size:14px;font-weight:700;background:'+(todaySt==='vacation'?'#2563EB':'#DBEAFE')+';color:'+(todaySt==='vacation'?'#fff':'#2563EB')+';">🏖️ 휴가</button>';
+  h+='<input data-rtn-memo="'+s.id+'__'+todayKey+'__'+m.id+'" placeholder="메모" value="'+esc(todayMemo)+'" style="width:80px;flex-shrink:0;font-size:11px;padding:8px 7px;border-radius:var(--rs);border:1px solid var(--br);background:var(--wh);color:var(--tx);" maxlength="30">';
   h+='</div>';
   h+='</div>';
 
@@ -941,17 +941,38 @@ function rApply(){
   if(!open.length){
     h+='<div class="empty">현재 신청 가능한 스터디가 없어요</div>';
   } else {
-    open.forEach(function(s){
-      var isApplied=(m.studyIds||[]).indexOf(s.id)>=0;var aw=allWeeks(s);
-      h+='<div class="apply-card"><div class="rb" style="margin-bottom:6px;">'+
-        '<div><div style="font-size:14px;font-weight:600;">'+esc(s.name)+'</div>'+
-          '<div style="font-size:11px;color:var(--mu);margin-top:2px;">['+esc(s.cat)+'] · '+aw.length+'주 진행</div></div>'+
-        (isApplied?'<button class="abtn sec" data-cancel-apply="'+s.id+'" style="font-size:12px;padding:5px 12px;">취소</button>':
-          '<button class="abtn" data-do-apply="'+s.id+'" style="font-size:12px;padding:5px 12px;">신청하기</button>')+
-      '</div>'+
-      (isApplied?'<div style="font-size:11px;color:var(--gr);font-weight:600;margin-bottom:6px;">✅ 신청완료 — 내 인증 탭에서 확인하세요</div>':'')+
-      (s.bandUrl?'<a href="'+esc(s.bandUrl)+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#00C73C,#00A032);border-radius:20px;padding:6px 14px;text-decoration:none;">🎵 스터디 밴드 바로가기</a>':'')+
+    // 카테고리별 그룹핑
+    var applyCats=[];
+    (S.catOrder.length?S.catOrder:[]).forEach(function(c){
+      if(open.some(function(s){return s.cat===c;})&&applyCats.indexOf(c)<0)applyCats.push(c);
+    });
+    open.forEach(function(s){if(applyCats.indexOf(s.cat)<0)applyCats.push(s.cat);});
+
+    applyCats.forEach(function(cat){
+      var catStudies=open.filter(function(s){return s.cat===cat;});
+      if(!catStudies.length)return;
+      var isCatOpen=S.expandedCat['apply_'+cat]!==false;
+      // 카테고리 헤더 (토글)
+      h+='<div style="display:flex;align-items:center;gap:6px;padding:.4rem .75rem;cursor:pointer;border-radius:var(--rs);background:linear-gradient(135deg,var(--pr),#7B2FF7);" data-applycattog="'+esc(cat)+'">'+
+        '<span style="flex:1;font-size:12px;font-weight:700;color:#fff;">'+esc(cat)+'</span>'+
+        '<span style="font-size:11px;color:rgba(255,255,255,.8);">'+catStudies.length+'개</span>'+
+        '<span style="font-size:12px;color:#fff;">'+(isCatOpen?'▲':'▼')+'</span>'+
       '</div>';
+      if(!isCatOpen)return;
+      catStudies.forEach(function(s){
+        var isApplied=(m.studyIds||[]).indexOf(s.id)>=0;
+        var isRoutine=s.cat==='루틴 체크';
+        var aw=allWeeks(s);
+        h+='<div class="apply-card"><div class="rb" style="margin-bottom:6px;">'+
+          '<div><div style="font-size:14px;font-weight:600;">'+esc(s.name)+'</div>'+
+            '<div style="font-size:11px;color:var(--mu);margin-top:2px;">'+(isRoutine?'날짜별 루틴':aw.length+'주 진행')+'</div></div>'+
+          (isApplied?'<button class="abtn sec" data-cancel-apply="'+s.id+'" style="font-size:12px;padding:5px 12px;">취소</button>':
+            '<button class="abtn" data-do-apply="'+s.id+'" style="font-size:12px;padding:5px 12px;">신청하기</button>')+
+        '</div>'+
+        (isApplied?'<div style="font-size:11px;color:var(--gr);font-weight:600;margin-bottom:6px;">✅ 신청완료 — 내 인증 탭에서 확인하세요</div>':'')+
+        (s.bandUrl?'<a href="'+esc(s.bandUrl)+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#00C73C,#00A032);border-radius:20px;padding:6px 14px;text-decoration:none;">🎵 스터디 밴드 바로가기</a>':'')+
+        '</div>';
+      });
     });
   }
   return h+'</div>';
@@ -2127,6 +2148,12 @@ function bAll(){
   // 내 현황 루틴 월 이동
   qsa('[data-mp-rtn-ym]',function(el){el.addEventListener('click',function(){
     S.mpRtnYM=el.dataset.mpRtnYm;render();
+  });});
+  // 스터디 신청 카테고리 토글
+  qsa('[data-applycattog]',function(el){el.addEventListener('click',function(){
+    var cat=el.dataset.applycattog;
+    S.expandedCat['apply_'+cat]=S.expandedCat['apply_'+cat]===false?true:false;
+    render();
   });});
   // 루틴 메모 저장 (blur 시)
   qsa('[data-rtn-memo]',function(el){el.addEventListener('blur',function(){
