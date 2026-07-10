@@ -434,7 +434,7 @@ var S={
   isAdmin:false,loggedMember:null,adminErr:'',memberErr:'',selMemId:'',
   newMember:'',expandedMem:null,expandedStudy:null,expandedMemCat:{},expandedMemSt:{},expandedVmCat:{},expandedVmSt:{},rptTab:'chart',
   chgErr:'',chgOk:'',viewMemberId:null,
-  settingsTab:'study',expandedWeek:null,expandedCI:{},routineWeekOffset:0,rtnTab:{},mpRtnYM:'',routineCalSid:null,routineCalMem:null,routineCalYM:'',dragSid:null,catOrder:[],expandedCat:{},
+  settingsTab:'study',expandedWeek:null,expandedCI:{},routineWeekOffset:0,rtnTab:{},mpRtnYMs:{},routineCalSid:null,routineCalMem:null,routineCalYM:'',dragSid:null,catOrder:[],expandedCat:{},
   calYear:new Date().getFullYear(),calMonth:new Date().getMonth(),events:{},notices:{},
   editNoticeId:null,expandedNotice:{},expandedSnotice:{},editSnoticeId:null,expandedWnote:{},expandedStudyMem:{},editNoticeId:null,expandedNotice:{},
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
@@ -851,32 +851,34 @@ function rMP(){
         '<span style="font-size:12px;color:var(--mu);margin-left:4px;">'+(isCatOpen?'▲':'▼')+'</span>'+
       '</div>';
       if(isCatOpen){
-        h+='<div class="sec rb" style="padding:.875rem;margin-top:4px;">';
-        // 루틴 현황 - 월별 달력 (인라인)
         var today2=new Date();
-        var mpRtnYM2=S.mpRtnYM||(today2.getFullYear()+'-'+(today2.getMonth()+1+'').padStart(2,'0'));
-        var yma2=mpRtnYM2.split('-');var yr2=+yma2[0],mo2=+yma2[1]-1;
-        var prevYm2=mo2===0?(yr2-1)+'-12':yr2+'-'+(mo2+'').padStart(2,'0');
-        var nextYm2=mo2===11?(yr2+1)+'-01':yr2+'-'+(mo2+2+'').padStart(2,'0');
-        var canNext2=new Date(yr2,mo2+1,1)<=today2;
-        var lastDate2=new Date(yr2,mo2+1,0).getDate();
         catS.forEach(function(s){
+          // 스터디별 독립 흰 박스
+          h+='<div class="sec rb" style="padding:.875rem;margin-top:4px;">';
+          // 스터디별 독립 월 관리
+          var mpRtnYM2=(S.mpRtnYMs&&S.mpRtnYMs[s.id])||(today2.getFullYear()+'-'+(today2.getMonth()+1+'').padStart(2,'0'));
+          var yma2=mpRtnYM2.split('-');var yr2=+yma2[0],mo2=+yma2[1]-1;
+          var prevYm2=mo2===0?(yr2-1)+'-12':yr2+'-'+(mo2+'').padStart(2,'0');
+          var nextYm2=mo2===11?(yr2+1)+'-01':yr2+'-'+(mo2+2+'').padStart(2,'0');
+          var canNext2=new Date(yr2,mo2+1,1)<=today2;
+          var lastDate2=new Date(yr2,mo2+1,0).getDate();
           var firstDay2=new Date(yr2,mo2,1).getDay();if(firstDay2===0)firstDay2=7;firstDay2--;
           var done2=0,total2=0;
           for(var d=1;d<=lastDate2;d++){var dt2=new Date(yr2,mo2,d);if(dt2>today2)break;total2++;if(rtnCk(s.id,yr2+'-'+(mo2+1+'').padStart(2,'0')+'-'+(d+'').padStart(2,'0'),m.id)==='done')done2++;}
           var pct2=total2?Math.round(done2/total2*100):0;
           var col2=pct2>=80?'var(--pr)':pct2>=50?'#F59E0B':'var(--mu)';
           var badge2=getRoutineMonthBadge(s.id,m.id,yr2,mo2);
-          h+='<div style="margin-bottom:14px;">';
-          h+='<div style="display:flex;align-items:center;gap:6px;justify-content:space-between;margin-bottom:6px;">';
+          // 헤더: 월이동 + 스터디명 + 달성률
+          h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
           h+='<div style="display:flex;align-items:center;gap:6px;">';
-          h+='<button data-mp-rtn-ym="'+prevYm2+'" style="padding:2px 8px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:11px;">◀</button>';
+          h+='<button data-mp-rtn-ym="'+prevYm2+'__'+s.id+'" style="padding:2px 8px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:11px;">◀</button>';
           h+='<span style="font-size:12px;font-weight:700;color:var(--pr);">'+yr2+'년 '+(mo2+1)+'월</span>';
-          h+='<button data-mp-rtn-ym="'+nextYm2+'" style="padding:2px 8px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:11px;opacity:'+(canNext2?'1':'0.3')+';pointer-events:'+(canNext2?'auto':'none')+';">▶</button>';
+          h+='<button data-mp-rtn-ym="'+nextYm2+'__'+s.id+'" style="padding:2px 8px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:11px;opacity:'+(canNext2?'1':'0.3')+';pointer-events:'+(canNext2?'auto':'none')+';">▶</button>';
           h+='</div>';
-          h+='<span style="font-size:12px;font-weight:700;color:var(--tx);">'+esc(s.name)+(badge2?' 💎':'')+'</span>';
+          h+='<span style="font-size:13px;font-weight:700;color:var(--tx);">'+esc(s.name)+(badge2?' 💎':'')+'</span>';
           h+='<span style="font-size:12px;font-weight:700;color:'+col2+';">'+done2+'/'+total2+'일 · '+pct2+'%</span>';
           h+='</div>';
+          // 미니 달력
           h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">';
           ['월','화','수','목','금','토','일'].forEach(function(dn,di){h+='<div style="text-align:center;font-size:9px;font-weight:700;color:'+(di>=5?'#EF4444':'var(--mu)')+';">'+dn+'</div>';});
           h+='</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">';
@@ -892,36 +894,30 @@ function rMP(){
             if(mm2)h+='<div style="position:absolute;bottom:-1px;right:-1px;width:5px;height:5px;background:#F59E0B;border-radius:50%;border:1px solid #fff;"></div>';
             h+='</div>';
           }
-          h+='</div></div>';
-        });
-        // 멤버 현황
-        var rtnMembers=S.members.filter(function(mem){return catS.some(function(s){return(mem.studyIds||[]).indexOf(s.id)>=0;});});
-        if(rtnMembers.length>0){
-          catS.forEach(function(s){
-            var others=S.members.filter(function(mem){return mem.id!==m.id&&(mem.studyIds||[]).indexOf(s.id)>=0;});
-            if(!others.length)return;
-            h+='<div style="margin-top:12px;border-top:1px solid var(--br);padding-top:10px;">';
-            h+='<div style="font-size:12px;font-weight:700;color:var(--pr);margin-bottom:8px;">👥 '+esc(s.name)+' 멤버 현황</div>';
-            others.sort(function(a,b){
-              var pA=0,pB=0,tA=0,tB=0;
-              for(var d=1;d<=lastDate2;d++){var dt3=new Date(yr2,mo2,d);if(dt3>today2)break;tA++;tB++;var dk3=yr2+'-'+(mo2+1+'').padStart(2,'0')+'-'+(d+'').padStart(2,'0');if(rtnCk(s.id,dk3,a.id)==='done')pA++;if(rtnCk(s.id,dk3,b.id)==='done')pB++;}
-              return(tB?pB/tB:0)-(tA?pA/tA:0);
-            }).forEach(function(mem){
+          h+='</div>';
+          // 멤버 현황
+          var others2=S.members.filter(function(mem){return mem.id!==m.id&&(mem.studyIds||[]).indexOf(s.id)>=0;});
+          if(others2.length){
+            h+='<div style="margin-top:10px;border-top:1px solid var(--br);padding-top:8px;">';
+            h+='<div style="font-size:12px;font-weight:700;color:var(--pr);margin-bottom:6px;">👥 멤버 현황</div>';
+            others2.map(function(mem){
               var d3=0,t3=0;
-              for(var d=1;d<=lastDate2;d++){var dt3=new Date(yr2,mo2,d);if(dt3>today2)break;t3++;var dk3=yr2+'-'+(mo2+1+'').padStart(2,'0')+'-'+(d+'').padStart(2,'0');if(rtnCk(s.id,dk3,mem.id)==='done')d3++;}
-              var p3=t3?Math.round(d3/t3*100):0;
-              var c3=p3>=80?'var(--pr)':p3>=50?'#F59E0B':'var(--mu)';
-              var b3=getRoutineMonthBadge(s.id,mem.id,yr2,mo2);
+              for(var d=1;d<=lastDate2;d++){var dt3=new Date(yr2,mo2,d);if(dt3>today2)break;t3++;if(rtnCk(s.id,yr2+'-'+(mo2+1+'').padStart(2,'0')+'-'+(d+'').padStart(2,'0'),mem.id)==='done')d3++;}
+              return{mem:mem,p:t3?Math.round(d3/t3*100):0,d:d3,t:t3};
+            }).sort(function(a,b){return b.p-a.p;}).forEach(function(r){
+              var c3=r.p>=80?'var(--pr)':r.p>=50?'#F59E0B':'var(--mu)';
+              var b3=getRoutineMonthBadge(s.id,r.mem.id,yr2,mo2);
               h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">';
-              h+='<span style="font-size:12px;min-width:80px;font-weight:600;">'+esc(mem.name)+(b3?' 💎':'')+'</span>';
-              h+='<div style="flex:1;height:7px;background:#F3F4F6;border-radius:4px;overflow:hidden;"><div style="width:'+p3+'%;height:100%;background:'+c3+';border-radius:4px;"></div></div>';
-              h+='<span style="font-size:11px;font-weight:700;color:'+c3+';min-width:36px;">'+p3+'%</span>';
+              h+='<span style="font-size:12px;min-width:80px;font-weight:600;">'+esc(r.mem.name)+(b3?' 💎':'')+'</span>';
+              h+='<div style="flex:1;height:7px;background:#F3F4F6;border-radius:4px;overflow:hidden;"><div style="width:'+r.p+'%;height:100%;background:'+c3+';border-radius:4px;"></div></div>';
+              h+='<span style="font-size:11px;font-weight:700;color:'+c3+';min-width:36px;">'+r.p+'%</span>';
+              h+='<span style="font-size:10px;color:var(--mu);">'+r.d+'/'+r.t+'일</span>';
               h+='</div>';
             });
             h+='</div>';
-          });
-        }
-        h+='</div>';
+          }
+          h+='</div>'; // sec rb 닫기
+        }); // catS.forEach 닫기
       }
       return;
     }
@@ -2314,7 +2310,12 @@ function bAll(){
   });});
   // 내 현황 루틴 월 이동
   qsa('[data-mp-rtn-ym]',function(el){el.addEventListener('click',function(){
-    S.mpRtnYM=el.dataset.mpRtnYm;render();
+    var parts=el.dataset.mpRtnYm.split('__');
+    var ym=parts[0],sid=parts[1];
+    S.mpRtnYMs=S.mpRtnYMs||{};
+    if(sid)S.mpRtnYMs[sid]=ym;
+    else S.mpRtnYMs={}; // 구버전 호환
+    render();
   });});
   // 스터디 신청 카테고리 토글
   qsa('[data-applycattog]',function(el){el.addEventListener('click',function(){
