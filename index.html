@@ -504,8 +504,13 @@ function rCI(){
       '<span style="font-size:12px;color:var(--mu);">'+(isCatOpen?'▲':'▼')+'</span>'+
     '</div>';
     if(!isCatOpen){return;}
+    if(cat==='루틴 체크'&&!catS.length){
+      h+='<div style="text-align:center;padding:.75rem;color:var(--mu);font-size:12px;">루틴이 없어요. 설정에서 추가해보세요 ✅</div>';
+    }
     catS.forEach(function(s){
-      var aw=allWeeks(s);var isExpCI=S.expandedCI[s.id]===true;var ss=sMSt(s,m);
+      var aw=allWeeks(s);var isExpCI=S.expandedCI[s.id]===true;
+      var ss=(cat==='루틴 체크')?{dn:0,vc:0,t:aw.length,pct:0}:sMSt(s,m);
+      if(cat==='루틴 체크'){aw.forEach(function(w){var st=ck(s.id,w.num,m.id);if(st==='done')ss.dn++;else if(st==='vacation')ss.vc++;});ss.pct=ss.t?Math.round(ss.dn/ss.t*100):0;}
       h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);overflow:hidden;margin-left:4px;">';
       h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:.875rem 1rem;cursor:pointer;" data-expci="'+s.id+'">'+
         '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+
@@ -1127,7 +1132,7 @@ function rRP(){
 
   if(S.rptTab==='chart'){
     var h='<div class="stack">'+tabH;
-    h+='<div class="sec rb" style="padding:.875rem;">';
+    h+='<div class="sec rb" style="padding:.875rem;overflow:hidden;width:100%;box-sizing:border-box;">';
     h+='<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:6px;">📊 스터디별 인증률</div>';
     h+='<div style="display:flex;gap:12px;font-size:11px;color:var(--mu);margin-bottom:10px;"><span><span style="display:inline-block;width:10px;height:10px;background:#16A34A;border-radius:2px;margin-right:3px;"></span>인증</span><span><span style="display:inline-block;width:10px;height:10px;background:#3B82F6;border-radius:2px;margin-right:3px;"></span>휴가</span></div>';
     var orderedCats=[];
@@ -1137,7 +1142,8 @@ function rRP(){
     orderedCats.forEach(function(cat){
       var catStudies=ac.filter(function(s){return s.cat===cat;});
       if(!catStudies.length)return;
-      h+='<div style="font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:8px;">'+esc(cat)+'</div>';
+      h+='<div style="font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:3px 10px;border-radius:20px;display:block;margin-bottom:8px;width:fit-content;">'+esc(cat)+'</div>';
+      h+='<div style="width:100%;">';
       catStudies.forEach(function(s){
         var aw=allWeeks(s);
         var enrolled=S.members.filter(function(m){return(m.studyIds||[]).indexOf(s.id)>=0;});
@@ -1154,6 +1160,7 @@ function rRP(){
         h+='<div style="width:'+vpct+'%;background:linear-gradient(90deg,#3B82F6,#60A5FA);"></div>';
         h+='</div></div>';
       });
+      h+='</div>';
       h+='<div style="height:8px;"></div>';
     });
     h+='</div>';
@@ -1218,7 +1225,7 @@ function rRP(){
       needCare.forEach(function(r){h+='<div style="font-size:12px;margin-bottom:2px;">'+esc(r.m.name)+' <b>'+r.pct+'%</b></div>';});
       h+='</div>';
     }
-    h+='<div class="sec rb" style="padding:.875rem;">';
+    h+='<div class="sec rb" style="padding:.875rem;overflow:hidden;width:100%;box-sizing:border-box;">';
     h+='<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:10px;">👥 멤버별 인증률 <span style="font-size:11px;font-weight:400;color:var(--mu);">(낮은 순)</span></div>';
     memRows.forEach(function(r){
       var pct=r.pct;var barColor=pct>=80?'#16A34A':pct>=50?'#F59E0B':'#EF4444';
