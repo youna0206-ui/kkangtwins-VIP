@@ -409,7 +409,7 @@ function getRoutineMonthBadge(sid,mid,yr,mo){
     var dk=yr+'-'+(mo+1+'').padStart(2,'0')+'-'+(d+'').padStart(2,'0');
     total++;if(rtnCk(sid,dk,mid)==='done')done++;
   }
-  return total>0&&done/total>=0.9;
+  return total>0&&done/total>=0.5;
 }
 function getMemberBadges(m){
   var badges=[];
