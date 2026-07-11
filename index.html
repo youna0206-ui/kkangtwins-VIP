@@ -1139,7 +1139,7 @@ function rApply(){
     open.forEach(function(s){if(applyCats.indexOf(s.cat)<0)applyCats.push(s.cat);});
 
     applyCats.forEach(function(cat){
-      var catStudies=open.filter(function(s){return s.cat===cat;});
+      var catStudies=sortStudiesByName(open.filter(function(s){return s.cat===cat;}));
       if(!catStudies.length)return;
       var isCatOpen=S.expandedCat['apply_'+cat]!==false;
       // 카테고리 헤더 (토글)
@@ -2072,7 +2072,7 @@ function rST(){
     var nmCats=[];
     (S.catOrder.length?S.catOrder:nmAct.map(function(s){return s.cat;})).forEach(function(c){if(nmCats.indexOf(c)<0&&nmAct.some(function(s){return s.cat===c;}))nmCats.push(c);});
     nmCats.forEach(function(cat){
-      var catS=nmAct.filter(function(s){return s.cat===cat;});
+      var catS=sortStudiesByName(nmAct.filter(function(s){return s.cat===cat;}));
       if(!catS.length)return;
       h+='<div style="margin-bottom:8px;">'+
         '<div style="font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:2px 10px;border-radius:20px;display:inline-block;margin-bottom:4px;">'+esc(cat)+'</div>'+
@@ -2113,7 +2113,7 @@ function rST(){
         '</div>';
         // ② 카테고리별 토글
         cts.forEach(function(cat){
-          var catStudies=cs2.filter(function(s){return s.cat===cat;});
+          var catStudies=sortStudiesByName(cs2.filter(function(s){return s.cat===cat;}));
           if(!catStudies.length)return;
           var mcatKey=m.id+'__'+cat;
           var mcatOpen=S.expandedMemCat[mcatKey]===true;
