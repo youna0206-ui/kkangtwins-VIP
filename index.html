@@ -440,7 +440,7 @@ var S={
   isAdmin:false,loggedMember:null,adminErr:'',memberErr:'',selMemId:'',
   newMember:'',expandedMem:null,expandedStudy:null,expandedMemCat:{},expandedMemSt:{},expandedVmCat:{},expandedVmSt:{},rptTab:'chart',
   chgErr:'',chgOk:'',viewMemberId:null,
-  settingsTab:'study',expandedWeek:null,expandedCI:{},routineWeekOffset:0,rtnTab:{},mpRtnYMs:{},routineCalSid:null,routineCalMem:null,routineCalYM:'',dragSid:null,catOrder:[],expandedCat:{},
+  settingsTab:'study',expandedWeek:null,expandedCI:{},routineWeekOffset:0,rtnTab:{},calMemoKey:null,mpRtnYMs:{},routineCalSid:null,routineCalMem:null,routineCalYM:'',dragSid:null,catOrder:[],expandedCat:{},
   calYear:new Date().getFullYear(),calMonth:new Date().getMonth(),events:{},notices:{},
   editNoticeId:null,expandedNotice:{},expandedSnotice:{},editSnoticeId:null,expandedWnote:{},expandedStudyMem:{},editNoticeId:null,expandedNotice:{},
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
@@ -667,8 +667,10 @@ function rRoutineCal(sid, mid, ym){
     var txtCol=st==='done'||st==='vacation'?'#fff':isWeekend?'#EF4444':'var(--tx)';
     var calMemo=rtnMemo(sid,dk,mid);
     h+='<div style="position:relative;">';
-    h+='<div title="'+esc(calMemo)+'" style="aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:'+bg+';color:'+txtCol+';'+(isFuture?'opacity:.3':'')+';">'+(calMemo?'<span title="'+esc(calMemo)+'">'+d+'</span>':d)+'</div>';
+    h+='<div '+((!isFuture)?'data-cal-memo="'+sid+'__'+dk+'__'+mid+'" style="cursor:pointer;"':'style=""')+'>';
+    h+='<div style="aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:'+bg+';color:'+txtCol+';'+(isFuture?'opacity:.3':'')+' position:relative;">'+d+'</div>';
     if(calMemo)h+='<div style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;background:#F59E0B;border-radius:50%;border:1.5px solid #fff;"></div>';
+    h+='</div>';
     h+='</div>';
   }
   h+='</div>';
@@ -678,6 +680,26 @@ function rRoutineCal(sid, mid, ym){
   h+='<div style="font-size:13px;font-weight:700;color:var(--pr);">✅ '+doneCnt+'일 달성 / 전체 '+totalCnt+'일 · '+pct+'%</div>';
   h+='</div>';
   h+='</div></div>';
+  // 메모 팝업
+  if(S.calMemoKey){
+    var cmp=S.calMemoKey.split('__');var cSid=cmp[0],cDk=cmp[1],cMid=cmp[2];
+    var cMemo=rtnMemo(cSid,cDk,cMid);
+    var cDate=new Date(cDk.replace(/-/g,'/'));
+    var cDays=['일','월','화','수','목','금','토'];
+    var cLabel=(cDate.getMonth()+1)+'월 '+cDate.getDate()+'일('+cDays[cDate.getDay()]+')';
+    h+='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center;" id="cal-memo-overlay">';
+    h+='<div style="background:var(--wh);border-radius:var(--r);padding:1.25rem;width:min(320px,88vw);">';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
+    h+='<span style="font-size:14px;font-weight:700;color:var(--pr);">📝 '+cLabel+' 메모</span>';
+    h+='<button id="cal-memo-close" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--mu);">✕</button>';
+    h+='</div>';
+    h+='<textarea id="cal-memo-input" placeholder="메모를 입력하세요..." maxlength="100" style="width:100%;height:80px;font-size:13px;padding:8px;border-radius:var(--rs);border:1.5px solid var(--br);resize:none;font-family:inherit;box-sizing:border-box;">'+esc(cMemo)+'</textarea>';
+    h+='<div style="display:flex;gap:8px;margin-top:10px;">';
+    h+='<button id="cal-memo-save" style="flex:1;padding:8px;border-radius:var(--rs);border:none;background:var(--pr);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">저장</button>';
+    h+='<button id="cal-memo-del" style="padding:8px 14px;border-radius:var(--rs);border:1px solid var(--br);background:var(--wh);color:var(--mu);font-size:13px;cursor:pointer;">삭제</button>';
+    h+='</div>';
+    h+='</div></div>';
+  }
   return h;
 }
 
@@ -1612,43 +1634,50 @@ function rRP(){
     }).join('')+'</div>';
 
   if(S.rptTab==='chart'){
-    var h='<div class="stack">'+tabH;
-    // 카테고리별 스터디 인증률
-    h+='<div class="sec rb" style="padding:.875rem;">';
+    var h='<div class="stack">';
+    h+=tabH;
+    h+='<div style="background:var(--wh);border:1.5px solid var(--br);border-radius:var(--r);padding:.875rem;">';
     h+='<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:6px;">📊 스터디별 인증률</div>';
     h+='<div style="display:flex;gap:12px;font-size:11px;color:var(--mu);margin-bottom:10px;">';
-    h+='<span><span style="display:inline-block;width:10px;height:10px;background:#16A34A;border-radius:2px;margin-right:3px;"></span>인증</span>';
-    h+='<span><span style="display:inline-block;width:10px;height:10px;background:#3B82F6;border-radius:2px;margin-right:3px;"></span>휴가</span>';
+    h+='<span>■ 인증</span><span>■ 휴가</span>';
     h+='</div>';
     var orderedCats=[];
     (S.catOrder.length?S.catOrder:ac.map(function(s){return s.cat;})).forEach(function(c){
       if(orderedCats.indexOf(c)<0&&ac.some(function(s){return s.cat===c;}))orderedCats.push(c);
     });
     orderedCats.forEach(function(cat){
-      var catStudies=ac.filter(function(s){return s.cat===cat;});
+      var catStudies=sortStudiesByName(ac.filter(function(s){return s.cat===cat;}));
       if(!catStudies.length)return;
-      h+='<div style="font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:8px;">'+esc(cat)+'</div>';
+      h+='<div style="font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pr),#7B2FF7);padding:3px 10px;border-radius:20px;display:inline-block;margin:4px 0 8px;">';
+      h+=esc(cat);
+      h+='</div>';
       catStudies.forEach(function(s){
         var aw=allWeeks(s);
         var enrolled=S.members.filter(function(m){return(m.studyIds||[]).indexOf(s.id)>=0;});
         if(!aw.length||!enrolled.length)return;
         var total=0,done=0,vac=0;
-        enrolled.forEach(function(m){aw.forEach(function(w){total++;var st=ck(s.id,w.num,m.id);if(st==='done')done++;else if(st==='vacation')vac++;});});
+        enrolled.forEach(function(m){
+          aw.forEach(function(w){
+            total++;
+            var st=ck(s.id,w.num,m.id);
+            if(st==='done')done++;
+            else if(st==='vacation')vac++;
+          });
+        });
         var pct=total?Math.round(done/total*100):0;
         var vpct=total?Math.round(vac/total*100):0;
         h+='<div style="margin-bottom:10px;">';
         h+='<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:2px;word-break:keep-all;">'+esc(s.name)+'</div>';
         h+='<div style="font-size:11px;color:var(--mu);margin-bottom:4px;">✅'+pct+'% 🏖️'+vpct+'% · '+enrolled.length+'명 · '+aw.length+'주</div>';
-        h+='<div style="height:10px;background:#F3F4F6;border-radius:5px;overflow:hidden;display:flex;">';
-        h+='<div style="width:'+pct+'%;background:linear-gradient(90deg,#16A34A,#22C55E);"></div>';
-        h+='<div style="width:'+vpct+'%;background:linear-gradient(90deg,#3B82F6,#60A5FA);"></div>';
-        h+='</div>';
-        h+='</div>';
+        h+='<div style="height:10px;background:#F3F4F6;border-radius:5px;overflow:hidden;">';
+        h+='<div style="display:flex;height:100%;">';
+        h+='<div style="width:'+pct+'%;background:#16A34A;"></div>';
+        h+='<div style="width:'+vpct+'%;background:#3B82F6;"></div>';
+        h+='</div></div></div>';
       });
       h+='<div style="height:8px;"></div>';
     });
     h+='</div>';
-    // 주차별 추이
     var wkMap={};
     ac.forEach(function(s){
       var enrolled=S.members.filter(function(m){return(m.studyIds||[]).indexOf(s.id)>=0;});
@@ -1660,93 +1689,99 @@ function rRP(){
     });
     var wkKeys=Object.keys(wkMap).sort(function(a,b){return parseInt(a)-parseInt(b);});
     if(wkKeys.length){
-      h+='<div class="sec rb" style="padding:.875rem;">';
+      h+='<div style="background:var(--wh);border:1.5px solid var(--br);border-radius:var(--r);padding:.875rem;">';
       h+='<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:10px;">📈 주차별 인증률 추이</div>';
-      h+='<div style="display:flex;align-items:flex-end;gap:4px;height:80px;padding-bottom:4px;">';
+      h+='<div style="display:flex;align-items:flex-end;gap:4px;height:80px;">';
       wkKeys.forEach(function(k){
-        var d=wkMap[k];var pct=d.total?Math.round(d.done/d.total*100):0;var hh=Math.max(4,Math.round(pct*80/100));
+        var d=wkMap[k];
+        var pct=d.total?Math.round(d.done/d.total*100):0;
+        var hh=Math.max(4,Math.round(pct*72/100));
         h+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">';
         h+='<span style="font-size:9px;color:var(--pr);font-weight:700;">'+pct+'%</span>';
-        h+='<div style="width:100%;height:'+hh+'px;background:linear-gradient(180deg,var(--pr),#7B2FF7);border-radius:4px 4px 0 0;"></div>';
+        h+='<div style="width:100%;height:'+hh+'px;background:var(--pr);border-radius:3px 3px 0 0;"></div>';
         h+='<span style="font-size:9px;color:var(--mu);">'+k+'</span>';
         h+='</div>';
       });
       h+='</div>';
       h+='</div>';
     }
-    // 완주율
     var hasComp=false;
-    var compH='<div class="sec rb" style="padding:.875rem;"><div style="font-size:13px;font-weight:700;color:#D97706;margin-bottom:10px;">🏆 스터디별 완주율</div>';
+    var compLines='';
     orderedCats.forEach(function(cat){
-      ac.filter(function(s){return s.cat===cat;}).forEach(function(s){
+      sortStudiesByName(ac.filter(function(s){return s.cat===cat;})).forEach(function(s){
         var enrolled=S.members.filter(function(m){return(m.studyIds||[]).indexOf(s.id)>=0;});
         if(!enrolled.length)return;
         var completers=enrolled.filter(function(m){return isStudyComplete(s,m);});
         var pct=Math.round(completers.length/enrolled.length*100);
-        var barColor=pct>=80?'#D97706':pct>=50?'#F59E0B':'#FCD34D';
         hasComp=true;
-        compH+='<div style="margin-bottom:8px;">';
-        compH+='<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:2px;word-break:keep-all;">'+esc(s.name)+'</div>';
-        compH+='<div style="font-size:11px;color:var(--mu);margin-bottom:4px;">🏆'+completers.length+'/'+enrolled.length+'명 · '+pct+'%</div>';
-        compH+='<div style="display:flex;align-items:center;gap:6px;">';
-        compH+='<div style="flex:1;height:10px;background:#FEF3C7;border-radius:5px;overflow:hidden;">';
-        compH+='<div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:5px;"></div>';
-        compH+='</div>';
-        compH+='<span style="font-size:11px;font-weight:700;color:'+barColor+';min-width:32px;">'+pct+'%</span>';
-        compH+='</div>';
-        if(completers.length)compH+='<div style="font-size:10px;color:#D97706;margin-top:2px;">'+completers.map(function(m){return esc(m.name);}).join(' · ')+'</div>';
-        compH+='</div>';
+        var bc=pct>=80?'#D97706':pct>=50?'#F59E0B':'#FCD34D';
+        compLines+='<div style="margin-bottom:8px;">';
+        compLines+='<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:2px;word-break:keep-all;">'+esc(s.name)+'</div>';
+        compLines+='<div style="font-size:11px;color:var(--mu);margin-bottom:3px;">🏆'+completers.length+'/'+enrolled.length+'명 · '+pct+'%</div>';
+        compLines+='<div style="display:flex;align-items:center;gap:6px;">';
+        compLines+='<div style="flex:1;height:8px;background:#FEF3C7;border-radius:4px;overflow:hidden;">';
+        compLines+='<div style="width:'+pct+'%;height:100%;background:'+bc+';border-radius:4px;"></div></div>';
+        compLines+='<span style="font-size:11px;font-weight:700;color:'+bc+';min-width:30px;">'+pct+'%</span>';
+        compLines+='</div>';
+        if(completers.length)compLines+='<div style="font-size:10px;color:#D97706;margin-top:2px;">'+completers.map(function(m){return esc(m.name);}).join(' · ')+'</div>';
+        compLines+='</div>';
       });
     });
-    compH+='</div>';
-    if(hasComp)h+=compH;
+    if(hasComp){
+      h+='<div style="background:var(--wh);border:1.5px solid var(--br);border-radius:var(--r);padding:.875rem;">';
+      h+='<div style="font-size:13px;font-weight:700;color:#D97706;margin-bottom:10px;">🏆 스터디별 완주율</div>';
+      h+=compLines;
+      h+='</div>';
+    }
     return h+'</div>';
   }
 
   if(S.rptTab==='member'){
-    var h='<div class="stack">'+tabH;
+    var h='<div class="stack">';
+    h+=tabH;
     var memRows=S.members.map(function(m){
       var myStudies=ac.filter(function(s){return(m.studyIds||[]).indexOf(s.id)>=0;});
       var total=0,done=0,vac=0;
       myStudies.forEach(function(s){allWeeks(s).forEach(function(w){total++;var st=ck(s.id,w.num,m.id);if(st==='done')done++;else if(st==='vacation')vac++;});});
       var pct=total?Math.round(done/total*100):0;
-      return{m:m,total:total,done:done,vac:vac,pct:pct,studies:myStudies.length};
+      var bdgs=getMemberBadges(m);
+      return{m:m,total:total,done:done,vac:vac,pct:pct,studies:myStudies.length,bdgs:bdgs};
     }).filter(function(r){return r.total>0;}).sort(function(a,b){
-      // 뱃지 많은 순 정렬
-      var ba=getMemberBadges(a.m).length;var bb=getMemberBadges(b.m).length;
-      if(bb!==ba)return bb-ba;
+      if(b.bdgs.length!==a.bdgs.length)return b.bdgs.length-a.bdgs.length;
       return b.pct-a.pct;
     });
-    var needCare=memRows.filter(function(r){return r.pct<50;});
-    if(needCare.length){
-      h+='<div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:var(--rs);padding:.75rem;">';
-      h+='<div style="font-size:12px;font-weight:700;color:#DC2626;margin-bottom:6px;">🔴 독려 필요 멤버 (인증률 50% 미만)</div>';
-      needCare.forEach(function(r){
-        var bdgs=getMemberBadges(r.m);
-        var g=bdgs.filter(function(x){return x.badge.label==='금메달';}).length;
-        var s2=bdgs.filter(function(x){return x.badge.label==='은메달';}).length;
-        var d=bdgs.filter(function(x){return x.badge.label==='다이아';}).length;
+    // 뱃지 보유 멤버
+    var hasBadge=memRows.filter(function(r){return r.bdgs.length>0;});
+    if(hasBadge.length){
+      h+='<div style="background:#FEF9EC;border:1.5px solid #FDE68A;border-radius:var(--rs);padding:.75rem;">';
+      h+='<div style="font-size:12px;font-weight:700;color:#D97706;margin-bottom:8px;">🏅 뱃지 보유 멤버</div>';
+      hasBadge.forEach(function(r){
+        var g=r.bdgs.filter(function(x){return x.badge.label==='금메달';}).length;
+        var s2=r.bdgs.filter(function(x){return x.badge.label==='은메달';}).length;
+        var d=r.bdgs.filter(function(x){return x.badge.label==='다이아';}).length;
         var bdgStr='';if(g)bdgStr+='🥇'+g+' ';if(s2)bdgStr+='🥈'+s2+' ';if(d)bdgStr+='💎'+d+' ';
-        h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
-        h+='<span style="font-size:12px;font-weight:600;min-width:80px;">'+esc(r.m.name)+'</span>';
-        if(bdgStr)h+='<span style="font-size:11px;">'+bdgStr.trim()+'</span>';
-        h+='<span style="font-size:12px;font-weight:700;color:#DC2626;">'+r.pct+'%</span>';
+        h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">';
+        h+='<span style="font-size:12px;font-weight:700;min-width:80px;">'+esc(r.m.name)+'</span>';
+        h+='<span style="font-size:13px;">'+bdgStr.trim()+'</span>';
+        h+='<span style="font-size:11px;color:var(--mu);">'+r.pct+'%</span>';
         h+='</div>';
       });
       h+='</div>';
     }
-    h+='<div class="sec rb" style="padding:.875rem;">';
-    h+='<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:10px;">👥 멤버별 인증률 <span style="font-size:11px;font-weight:400;color:var(--mu);">(낮은 순)</span></div>';
+    // 전체 멤버별 인증률
+    h+='<div style="background:var(--wh);border:1.5px solid var(--br);border-radius:var(--r);padding:.875rem;">';
+    h+='<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:10px;">👥 멤버별 인증률</div>';
     memRows.forEach(function(r){
-      var pct=r.pct;var barColor=pct>=80?'#16A34A':pct>=50?'#F59E0B':'#EF4444';
-      h+='<div style="margin-bottom:12px;">';
-      h+='<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:2px;">'+esc(r.m.name)+'</div>';
-      h+='<div style="font-size:11px;color:var(--mu);margin-bottom:4px;">✅'+r.done+' 🏖️'+r.vac+' / '+r.total+'주 · '+r.studies+'개 스터디</div>';
-      h+='<div style="display:flex;align-items:center;gap:6px;">';
-      h+='<div style="flex:1;height:10px;background:#F3F4F6;border-radius:5px;overflow:hidden;">';
-      h+='<div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:5px;"></div>';
+      var pct=r.pct;
+      var bc=pct>=80?'#16A34A':pct>=50?'#F59E0B':'#EF4444';
+      h+='<div style="margin-bottom:10px;">';
+      h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">';
+      h+='<span style="font-size:12px;font-weight:700;flex:1;">'+esc(r.m.name)+'</span>';
+      h+='<span style="font-size:11px;color:var(--mu);">✅'+r.done+' / '+r.total+'주</span>';
+      h+='<span style="font-size:12px;font-weight:700;color:'+bc+';min-width:36px;text-align:right;">'+pct+'%</span>';
       h+='</div>';
-      h+='<span style="font-size:11px;font-weight:700;color:'+barColor+';min-width:32px;text-align:right;">'+pct+'%</span>';
+      h+='<div style="height:8px;background:#F3F4F6;border-radius:4px;overflow:hidden;">';
+      h+='<div style="width:'+pct+'%;height:100%;background:'+bc+';border-radius:4px;"></div>';
       h+='</div>';
       h+='</div>';
     });
@@ -1754,6 +1789,7 @@ function rRP(){
     return h+'</div>';
   }
 
+  // ── 표 탭 ──
   // ── 표 탭 ──
   var ac2=S.studies.filter(function(s){return s.active;});
   var sopts='<option value="">전체 스터디</option>'+ac2.map(function(s){return '<option value="'+s.id+'"'+(S.rptSid===s.id?' selected':'')+'>'+esc('['+s.cat+'] '+s.name)+'</option>';}).join('');
@@ -2427,6 +2463,32 @@ function bAll(){
     S.rtnTab[sid]=tab;
     render();
   });});
+  // 달력 날짜 클릭 → 메모 팝업
+  qsa('[data-cal-memo]',function(el){el.addEventListener('click',function(e){
+    e.stopPropagation();
+    S.calMemoKey=el.dataset.calMemo;
+    render();
+    setTimeout(function(){var t=document.getElementById('cal-memo-input');if(t)t.focus();},50);
+  });});
+  // 메모 저장
+  on('cal-memo-save',function(){
+    if(!S.calMemoKey)return;
+    var p=S.calMemoKey.split('__');
+    var t=document.getElementById('cal-memo-input');
+    setRtnMemo(p[0],p[1],p[2],t?t.value.trim():'');
+    S.calMemoKey=null;persist();render();
+  });
+  // 메모 삭제
+  on('cal-memo-del',function(){
+    if(!S.calMemoKey)return;
+    var p=S.calMemoKey.split('__');
+    setRtnMemo(p[0],p[1],p[2],'');
+    S.calMemoKey=null;persist();render();
+  });
+  // 메모 팝업 닫기
+  on('cal-memo-close',function(){S.calMemoKey=null;render();});
+  var calMemoOverlay=document.getElementById('cal-memo-overlay');
+  if(calMemoOverlay)calMemoOverlay.addEventListener('click',function(e){if(e.target===calMemoOverlay){S.calMemoKey=null;render();}});
   // 루틴 달력 닫기
   on('rtn-cal-close',function(){S.routineCalSid=null;S.routineCalMem=null;S.routineCalYM='';render();});
   var rtnModal=document.getElementById('rtn-cal-modal');
