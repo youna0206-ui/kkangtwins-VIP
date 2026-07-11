@@ -2463,13 +2463,16 @@ function bAll(){
     S.rtnTab[sid]=tab;
     render();
   });});
-  // 달력 날짜 클릭 → 메모 팝업
-  qsa('[data-cal-memo]',function(el){el.addEventListener('click',function(e){
-    e.stopPropagation();
-    S.calMemoKey=el.dataset.calMemo;
-    render();
-    setTimeout(function(){var t=document.getElementById('cal-memo-input');if(t)t.focus();},50);
-  });});
+  // 달력 날짜 클릭 → 메모 팝업 (이벤트 위임)
+  document.addEventListener('click',function(e){
+    var el=e.target.closest('[data-cal-memo]');
+    if(el){
+      e.stopPropagation();
+      S.calMemoKey=el.dataset.calMemo;
+      render();
+      setTimeout(function(){var t=document.getElementById('cal-memo-input');if(t)t.focus();},50);
+    }
+  });
   // 메모 저장
   on('cal-memo-save',function(){
     if(!S.calMemoKey)return;
