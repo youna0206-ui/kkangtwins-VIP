@@ -680,26 +680,29 @@ function rRoutineCal(sid, mid, ym){
   h+='<div style="font-size:13px;font-weight:700;color:var(--pr);">✅ '+doneCnt+'일 달성 / 전체 '+totalCnt+'일 · '+pct+'%</div>';
   h+='</div>';
   h+='</div></div>';
-  // 메모 팝업
-  if(S.calMemoKey){
-    var cmp=S.calMemoKey.split('__');var cSid=cmp[0],cDk=cmp[1],cMid=cmp[2];
-    var cMemo=rtnMemo(cSid,cDk,cMid);
-    var cDate=new Date(cDk.replace(/-/g,'/'));
-    var cDays=['일','월','화','수','목','금','토'];
-    var cLabel=(cDate.getMonth()+1)+'월 '+cDate.getDate()+'일('+cDays[cDate.getDay()]+')';
-    h+='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center;" id="cal-memo-overlay">';
-    h+='<div style="background:var(--wh);border-radius:var(--r);padding:1.25rem;width:min(320px,88vw);">';
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
-    h+='<span style="font-size:14px;font-weight:700;color:var(--pr);">📝 '+cLabel+' 메모</span>';
-    h+='<button id="cal-memo-close" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--mu);">✕</button>';
-    h+='</div>';
-    h+='<textarea id="cal-memo-input" placeholder="메모를 입력하세요..." maxlength="100" style="width:100%;height:80px;font-size:13px;padding:8px;border-radius:var(--rs);border:1.5px solid var(--br);resize:none;font-family:inherit;box-sizing:border-box;">'+esc(cMemo)+'</textarea>';
-    h+='<div style="display:flex;gap:8px;margin-top:10px;">';
-    h+='<button id="cal-memo-save" style="flex:1;padding:8px;border-radius:var(--rs);border:none;background:var(--pr);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">저장</button>';
-    h+='<button id="cal-memo-del" style="padding:8px 14px;border-radius:var(--rs);border:1px solid var(--br);background:var(--wh);color:var(--mu);font-size:13px;cursor:pointer;">삭제</button>';
-    h+='</div>';
-    h+='</div></div>';
-  }
+  h+=rCalMemoPopup();
+  return h;
+}
+// 날짜 메모 팝업 (내 현황 미니달력 / 멤버 현황 달력 공용)
+function rCalMemoPopup(){
+  if(!S.calMemoKey)return '';
+  var cmp=S.calMemoKey.split('__');var cSid=cmp[0],cDk=cmp[1],cMid=cmp[2];
+  var cMemo=rtnMemo(cSid,cDk,cMid);
+  var cDate=new Date(cDk.replace(/-/g,'/'));
+  var cDays=['일','월','화','수','목','금','토'];
+  var cLabel=(cDate.getMonth()+1)+'월 '+cDate.getDate()+'일('+cDays[cDate.getDay()]+')';
+  var h='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center;" id="cal-memo-overlay">';
+  h+='<div style="background:var(--wh);border-radius:var(--r);padding:1.25rem;width:min(320px,88vw);">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
+  h+='<span style="font-size:14px;font-weight:700;color:var(--pr);">📝 '+cLabel+' 메모</span>';
+  h+='<button id="cal-memo-close" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--mu);">✕</button>';
+  h+='</div>';
+  h+='<textarea id="cal-memo-input" placeholder="메모를 입력하세요..." maxlength="100" style="width:100%;height:80px;font-size:13px;padding:8px;border-radius:var(--rs);border:1.5px solid var(--br);resize:none;font-family:inherit;box-sizing:border-box;">'+esc(cMemo)+'</textarea>';
+  h+='<div style="display:flex;gap:8px;margin-top:10px;">';
+  h+='<button id="cal-memo-save" style="flex:1;padding:8px;border-radius:var(--rs);border:none;background:var(--pr);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">저장</button>';
+  h+='<button id="cal-memo-del" style="padding:8px 14px;border-radius:var(--rs);border:1px solid var(--br);background:var(--wh);color:var(--mu);font-size:13px;cursor:pointer;">삭제</button>';
+  h+='</div>';
+  h+='</div></div>';
   return h;
 }
 
@@ -1059,7 +1062,7 @@ function rMP(){
       h+='</div>';
       // 미니 달력
       h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">';
-      ['월','화','수','목','금','토','일'].forEach(function(d,i){h+='<div style="text-align:center;font-size:9px;font-weight:700;color:'+(i>=5?'#EF4444':'var(--mu)');'">'+d+'</div>';});
+      ['월','화','수','목','금','토','일'].forEach(function(d,i){h+='<div style="text-align:center;font-size:9px;font-weight:700;color:'+(i>=5?'#EF4444':'var(--mu)')+';">'+d+'</div>';});
       h+='</div>';
       h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">';
       for(var i=0;i<firstDay;i++)h+='<div></div>';
@@ -1071,8 +1074,11 @@ function rMP(){
         var bg=st==='done'?'var(--pr)':st==='vacation'?'#3B82F6':isWe?'#FEF2F2':'#F8F9FA';
         var tc=st==='done'||st==='vacation'?'#fff':isWe?'#EF4444':'var(--tx)';
         var mpMemo=rtnMemo(s.id,dk,m.id);
-        h+='<div style="position:relative;"><div title="'+esc(mpMemo)+'" style="aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;background:'+bg+';color:'+tc+';'+(isFuture?'opacity:.3':'')+'">'+d+'</div>';
+        h+='<div style="position:relative;">';
+        h+='<div '+(!isFuture?'data-cal-memo="'+s.id+'__'+dk+'__'+m.id+'" style="cursor:pointer;"':'style=""')+'>';
+        h+='<div title="'+esc(mpMemo)+'" style="aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;background:'+bg+';color:'+tc+';'+(isFuture?'opacity:.3':'')+'">'+d+'</div>';
         if(mpMemo)h+='<div style="position:absolute;bottom:-1px;right:-1px;width:5px;height:5px;background:#F59E0B;border-radius:50%;border:1px solid #fff;"></div>';
+        h+='</div>';
         h+='</div>';
       }
       h+='</div></div>';
@@ -1111,6 +1117,7 @@ function rMP(){
       h+='</div>';
     });
   }
+  h+=rCalMemoPopup();
   return h+'</div>';
 }
 function rApply(){
