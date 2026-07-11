@@ -1711,7 +1711,12 @@ function rRP(){
       myStudies.forEach(function(s){allWeeks(s).forEach(function(w){total++;var st=ck(s.id,w.num,m.id);if(st==='done')done++;else if(st==='vacation')vac++;});});
       var pct=total?Math.round(done/total*100):0;
       return{m:m,total:total,done:done,vac:vac,pct:pct,studies:myStudies.length};
-    }).filter(function(r){return r.total>0;}).sort(function(a,b){return a.pct-b.pct;});
+    }).filter(function(r){return r.total>0;}).sort(function(a,b){
+      // 뱃지 많은 순 정렬
+      var ba=getMemberBadges(a.m).length;var bb=getMemberBadges(b.m).length;
+      if(bb!==ba)return bb-ba;
+      return b.pct-a.pct;
+    });
     var needCare=memRows.filter(function(r){return r.pct<50;});
     if(needCare.length){
       h+='<div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:var(--rs);padding:.75rem;">';
@@ -1750,6 +1755,34 @@ function rRP(){
   }
 
   // ── 표 탭 ──
+  var ac2=S.studies.filter(function(s){return s.active;});
+  var sopts='<option value="">전체 스터디</option>'+ac2.map(function(s){return '<option value="'+s.id+'"'+(S.rptSid===s.id?' selected':'')+'>'+esc('['+s.cat+'] '+s.name)+'</option>';}).join('');
+  var wopts='<option value="">전체 주차</option>';
+  if(S.rptSid){var rs=ac2.filter(function(x){return x.id===S.rptSid;})[0];if(rs)allWeeks(rs).forEach(function(w){wopts+='<option value="'+w.num+'"'+(String(S.rptWeek)===String(w.num)?' selected':'')+'>'+w.num+'주차'+(w.locked?' 🔒':'')+'</option>';});}
+  var mopts='<option value="">전체 멤버</option>'+S.members.map(function(m){return '<option value="'+m.id+'"'+(S.rptMid===m.id?' selected':'')+'>'+esc(m.name)+'</option>';}).join('');
+  var rows=bRows();
+  var dc=rows.filter(function(r){return r.st==='done';}).length;
+  var vc=rows.filter(function(r){return r.st==='vacation';}).length;
+  var wc=rows.filter(function(r){return !r.st;}).length;
+  var pt=rows.length?Math.round(dc/rows.length*100):0;
+  var f='<div class="fbox"><div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:8px;">🔍 조회 조건</div>'+
+    '<div style="display:flex;gap:6px;margin-bottom:10px;"><button class="abtn sm'+(S.rptMode==='study'?'':' sec')+'" id="rsm">스터디별</button>'+
+    '<button class="abtn sm'+(S.rptMode==='member'?'':' sec')+'" id="rmm">멤버별</button></div>';
+  if(S.rptMode==='study'){f+='<div style="display:flex;gap:8px;flex-wrap:wrap;"><div class="fg"><label>스터디</label><select id="rss" style="font-size:13px;padding:.5rem .65rem;margin:0;">'+sopts+'</select></div><div class="fg"><label>주차</label><select id="rws" style="font-size:13px;padding:.5rem .65rem;margin:0;">'+wopts+'</select></div></div>';}
+  else{f+='<div class="fg"><label>멤버</label><select id="rms" style="font-size:13px;padding:.5rem .65rem;margin:0;">'+mopts+'</select></div>';}
+  f+='</div>';
+  var sm=rows.length?'<div class="rsum"><div class="rsbox"><div class="rsnum" style="color:var(--pr);">'+rows.length+'</div><div class="rslbl">전체</div></div><div class="rsbox"><div class="rsnum" style="color:var(--gr);">'+dc+'</div><div class="rslbl">✅인증</div></div><div class="rsbox"><div class="rsnum" style="color:var(--bld);">'+vc+'</div><div class="rslbl">🏖️휴가</div></div><div class="rsbox"><div class="rsnum" style="color:var(--or);">'+wc+'</div><div class="rslbl">⏳미인증</div></div><div class="rsbox"><div class="rsnum" style="color:var(--pr);">'+pt+'%</div><div class="rslbl">인증률</div></div></div>':'';
+  var tb='';
+  if(rows.length){
+    var tr=rows.map(function(r){
+      var badge=r.st==='done'?'<span class="bd">✓인증</span>':r.st==='vacation'?'<span class="bv">🏖️휴가</span>':'<span class="bw">미인증</span>';
+      var ekey=r.sid+'__'+r.week+'__'+r.mid;var isEdit=S.editKey===ekey;
+      var cell=isEdit?'<div style="display:flex;gap:3px;flex-wrap:wrap;"><button class="rpt-pick" data-pick="'+ekey+'__done" style="font-size:11px;padding:2px 7px;border-radius:20px;background:var(--grb);color:#16A34A;border:1.5px solid #BBF7D0;cursor:pointer;font-weight:700;">✅인증</button><button class="rpt-pick" data-pick="'+ekey+'__vacation" style="font-size:11px;padding:2px 7px;border-radius:20px;background:var(--bll);color:var(--bld);border:1.5px solid #BFDBFE;cursor:pointer;font-weight:700;">🏖️휴가</button><button class="rpt-pick" data-pick="'+ekey+'__none" style="font-size:11px;padding:2px 7px;border-radius:20px;background:var(--orb);color:#D97706;border:1.5px solid #FDE68A;cursor:pointer;">⏳미인증</button><button class="rpt-cancel" style="font-size:10px;padding:2px 5px;border-radius:20px;border:1px solid var(--br);background:transparent;cursor:pointer;color:var(--mu);">✕</button></div>':'<span class="rpt-edt" data-edit="'+ekey+'" style="cursor:pointer;display:inline-flex;align-items:center;gap:2px;">'+badge+'<span style="font-size:9px;color:var(--mu);">✏️</span></span>';
+      return '<tr><td style="font-weight:500;white-space:nowrap;">'+esc(r.mem)+'</td><td>'+esc(r.study)+'</td><td style="white-space:nowrap;">'+(r.locked?'🔒':'')+r.week+'/'+r.tw+'주</td><td>'+cell+'</td></tr>';
+    }).join('');
+    tb='<div class="tscroll"><table class="rtable"><thead><tr><th>멤버</th><th>스터디</th><th>주차</th><th>상태</th></tr></thead><tbody>'+tr+'</tbody></table></div><div style="display:flex;gap:8px;"><button class="abtn" id="rcs" style="flex:1;">📥 CSV 다운로드</button><button class="abtn sec" id="rcp" style="flex:1;">📋 구글시트 복사</button></div>';
+  }else tb='<div class="empty">조회 결과가 없어요</div>';
+  return '<div class="stack">'+tabH+f+sm+tb+'</div>';
 }
 function xCsv(){
   var rows=bRows();var lines=[['멤버','스터디','카테고리','주차','총주차','잠금','상태'].join(',')];
