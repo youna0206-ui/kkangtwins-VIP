@@ -440,7 +440,7 @@ var S={
   isAdmin:false,loggedMember:null,adminErr:'',memberErr:'',selMemId:'',
   newMember:'',expandedMem:null,expandedStudy:null,expandedMemCat:{},expandedMemSt:{},expandedVmCat:{},expandedVmSt:{},rptTab:'chart',
   chgErr:'',chgOk:'',viewMemberId:null,
-  settingsTab:'study',expandedWeek:null,expandedCI:{},routineWeekOffset:0,rtnTab:{},calMemoKey:null,mpRtnYMs:{},routineCalSid:null,routineCalMem:null,routineCalYM:'',dragSid:null,catOrder:[],expandedCat:{},
+  settingsTab:'study',expandedWeek:null,expandedCI:{},routineWeekOffset:{},rtnTab:{},calMemoKey:null,mpRtnYMs:{},routineCalSid:null,routineCalMem:null,routineCalYM:'',dragSid:null,catOrder:[],expandedCat:{},
   calYear:new Date().getFullYear(),calMonth:new Date().getMonth(),events:{},notices:{},
   editNoticeId:null,expandedNotice:{},expandedSnotice:{},editSnoticeId:null,expandedWnote:{},expandedStudyMem:{},editNoticeId:null,expandedNotice:{},
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
@@ -514,7 +514,7 @@ function rAL(){
 }
 // ── 루틴 체크 날짜형 렌더링 ──
 function rRoutineStudy(s, m){
-  var offset=S.routineWeekOffset||0;
+  var offset=(S.routineWeekOffset&&S.routineWeekOffset[s.id])||0;
   var mon=getThisWeekMonday();
   mon.setDate(mon.getDate()+offset*7);
   var days=[];
@@ -561,11 +561,11 @@ function rRoutineStudy(s, m){
     if(rtnTab==='check'){
       // 주 네비
       h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
-      h+='<button data-rtn-week="-1" style="padding:3px 10px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:12px;">◀</button>';
+      h+='<button data-rtn-week="'+s.id+'__-1" style="padding:3px 10px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:12px;">◀</button>';
       h+='<span style="font-size:11px;font-weight:700;color:var(--pr);">'+toKorDate(mon)+' ~ '+toKorDate(days[6])+'</span>';
       var nextMon=new Date(mon);nextMon.setDate(mon.getDate()+7);
       var canNext=nextMon<=today;
-      h+='<button data-rtn-week="+1" style="padding:3px 10px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:12px;opacity:'+(canNext?'1':'0.3')+';pointer-events:'+(canNext?'auto':'none')+';">▶</button>';
+      h+='<button data-rtn-week="'+s.id+'__+1" style="padding:3px 10px;border-radius:20px;border:1px solid var(--br);background:var(--wh);cursor:pointer;font-size:12px;opacity:'+(canNext?'1':'0.3')+';pointer-events:'+(canNext?'auto':'none')+';">▶</button>';
       h+='</div>';
 
       var dayNames=['월','화','수','목','금','토','일'];
@@ -2401,8 +2401,9 @@ function bAll(){
   // 루틴 주 이동
   qsa('[data-rtn-week]',function(el){el.addEventListener('click',function(e){
     e.stopPropagation();
-    var v=parseInt(el.dataset.rtnWeek);
-    S.routineWeekOffset=(S.routineWeekOffset||0)+v;
+    var p=el.dataset.rtnWeek.split('__');var wsid=p[0],v=parseInt(p[1]);
+    if(!S.routineWeekOffset)S.routineWeekOffset={};
+    S.routineWeekOffset[wsid]=(S.routineWeekOffset[wsid]||0)+v;
     render();
   });});
   // 루틴 인증/휴가 버튼
