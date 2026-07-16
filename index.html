@@ -226,6 +226,12 @@ function sortStudiesByName(arr){
 function allWeeks(s){return s.weeks||[];}
 function openWeeks(s){return allWeeks(s).filter(function(w){return !w.locked;});}
 function isStudyEnded(s){return s.cat&&s.cat.replace(/\s/g,'').indexOf('종료')>=0;}
+// 로그인한 멤버 또는(관리자인 경우) 강둥맘 멤버 반환
+function curLoggedMember(){
+  if(S.loggedMember)return S.loggedMember;
+  if(S.isAdmin)return S.members.filter(function(x){return x.name&&x.name.indexOf('강둥맘')>=0;})[0]||null;
+  return null;
+}
 function showCompleteCard(studyName, memberName, weekCount){
   var modal=document.getElementById('complete-modal');
   var canvas=document.getElementById('complete-canvas');
@@ -478,8 +484,8 @@ function rApp(){
   h+='</div></div>';
   h+='<div class="tabs">';
   if(im||ia)h+='<button class="tab'+(S.tab==='ci'?' on':'')+'" data-tab="ci">✅ 내 인증</button>';
-  if(im)h+='<button class="tab'+(S.tab==='mp'?' on':'')+'" data-tab="mp">📈 내 현황</button>';
-  if(im)h+='<button class="tab'+(S.tab==='apply'?' on':'')+'" data-tab="apply">📝 스터디 신청</button>';
+  if(im||ia)h+='<button class="tab'+(S.tab==='mp'?' on':'')+'" data-tab="mp">📈 내 현황</button>';
+  if(im||ia)h+='<button class="tab'+(S.tab==='apply'?' on':'')+'" data-tab="apply">📝 스터디 신청</button>';
   if(im||ia)h+='<button class="tab'+(S.tab==='notice'?' on':'')+'" data-tab="notice">📢 공지</button>';
   if(im||ia)h+='<button class="tab'+(S.tab==='cal'?' on':'')+'" data-tab="cal">📅 일정</button>';
   if(im)h+='<button class="tab'+(S.tab==='cp'?' on':'')+'" data-tab="cp">🔑 비번변경</button>';
@@ -853,8 +859,8 @@ function rCI(){
   return h+'</div>';
 }
 function rMP(){
-  if(!S.loggedMember)return rML();
-  var m=S.loggedMember;
+  var m=curLoggedMember();
+  if(!m)return S.isAdmin?'<div class="sec" style="text-align:center;font-size:14px;color:var(--mu);">강둥맘 멤버를 찾을 수 없어요. 설정에서 이름에 "강둥맘"이 포함된 멤버를 추가해주세요.</div>':rML();
   var my=S.studies.filter(function(s){return s.active&&(m.studyIds||[]).indexOf(s.id)>=0;});
   var tot=mTotSt(m);
   var h='<div class="stack"><div class="sec">'+
@@ -1122,8 +1128,8 @@ function rMP(){
   return h+'</div>';
 }
 function rApply(){
-  if(!S.loggedMember)return rML();
-  var m=S.loggedMember;
+  var m=curLoggedMember();
+  if(!m)return S.isAdmin?'<div class="sec" style="text-align:center;font-size:14px;color:var(--mu);">강둥맘 멤버를 찾을 수 없어요. 설정에서 이름에 "강둥맘"이 포함된 멤버를 추가해주세요.</div>':rML();
   var open=S.studies.filter(function(s){return s.active&&s.applyOpen;});
   var h='<div class="stack"><div class="sec">'+
     '<div style="font-size:15px;font-weight:700;margin-bottom:4px;">📝 스터디 신청</div>'+
@@ -2576,7 +2582,7 @@ function bAll(){
   });});
   // 스터디 신청
   qsa('[data-do-apply]',function(el){el.addEventListener('click',function(){
-    var m=S.loggedMember;if(!m)return;
+    var m=curLoggedMember();if(!m)return;
     var sid=el.dataset.doApply;m.studyIds=m.studyIds||[];
     if(m.studyIds.indexOf(sid)<0)m.studyIds.push(sid);
     var ix=S.members.findIndex(function(x){return x.id===m.id;});if(ix>=0)S.members[ix]=m;persist();
@@ -2585,7 +2591,7 @@ function bAll(){
     render();
   });});
   qsa('[data-cancel-apply]',function(el){el.addEventListener('click',function(){
-    var m=S.loggedMember;if(!m)return;
+    var m=curLoggedMember();if(!m)return;
     var sid=el.dataset.cancelApply;
     var s=S.studies.filter(function(x){return x.id===sid;})[0];
     if(!confirm((s?s.name:'스터디')+'\n신청을 취소할까요?'))return;
