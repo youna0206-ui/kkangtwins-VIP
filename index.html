@@ -440,7 +440,7 @@ var S={
   isAdmin:false,loggedMember:null,adminErr:'',memberErr:'',selMemId:'',
   newMember:'',expandedMem:null,expandedStudy:null,expandedMemCat:{},expandedMemSt:{},expandedVmCat:{},expandedVmSt:{},rptTab:'chart',
   chgErr:'',chgOk:'',viewMemberId:null,
-  settingsTab:'study',expandedWeek:null,expandedCI:{},routineWeekOffset:{},rtnTab:{},calMemoKey:null,mpRtnYMs:{},routineCalSid:null,routineCalMem:null,routineCalYM:'',dragSid:null,catOrder:[],expandedCat:{},
+  settingsTab:'study',expandedWeek:null,expandedCI:{},routineWeekOffset:{},rtnTab:{},calMemoKey:null,mpRtnYMs:{},routineCalSid:null,routineCalMem:null,routineCalYM:'',dragSid:null,catOrder:[],expandedCat:{},expandedStudyCard:{},
   calYear:new Date().getFullYear(),calMonth:new Date().getMonth(),events:{},notices:{},
   editNoticeId:null,expandedNotice:{},expandedSnotice:{},editSnoticeId:null,expandedWnote:{},expandedStudyMem:{},editNoticeId:null,expandedNotice:{},
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
@@ -1904,15 +1904,25 @@ function rST(){
       catStudies.forEach(function(s,ci){
         var isExpW=S.expandedWeek===s.id;var aw=allWeeks(s);
         var isFirst=ci===0;var isLast=ci===catStudies.length-1;
-        h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);margin-bottom:6px;overflow:hidden;">'+
+        var isCardOpen=S.expandedStudyCard[s.id]===true;
+        var memCnt=S.members.filter(function(m){return(m.studyIds||[]).indexOf(s.id)>=0;}).length;
+        h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);margin-bottom:6px;overflow:hidden;'+(s.active?'':'opacity:.55;')+'">'+
+          // 접힌 헤더 (항상 보임, 클릭시 토글)
+          '<div style="display:flex;align-items:center;gap:6px;padding:.55rem .75rem;cursor:pointer;" data-stcardtog="'+s.id+'">'+
+            '<div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;" onclick="event.stopPropagation()">'+
+              '<button style="font-size:9px;padding:1px 4px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);'+(isFirst?'opacity:.3;':'')+'" data-sup="'+s.id+'"'+(isFirst?' disabled':'')+'>▲</button>'+
+              '<button style="font-size:9px;padding:1px 4px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);'+(isLast?'opacity:.3;':'')+'" data-sdn="'+s.id+'"'+(isLast?' disabled':'')+'>▼</button>'+
+            '</div>'+
+            '<span style="font-size:13px;font-weight:700;flex:1;color:var(--tx);">'+esc(s.name)+'</span>'+
+            (s.dayOfWeek?'<span style="font-size:10px;font-weight:700;color:var(--pr);background:var(--prl);padding:2px 7px;border-radius:20px;flex-shrink:0;">'+esc(s.dayOfWeek)+'요일</span>':'')+
+            '<span style="font-size:11px;color:var(--mu);flex-shrink:0;">👥'+memCnt+'</span>'+
+            '<span style="font-size:12px;color:var(--mu);flex-shrink:0;">'+(isCardOpen?'▲':'▼')+'</span>'+
+          '</div>'+
+          (isCardOpen?(
           // 헤더행
-          '<div style="display:flex;flex-direction:column;gap:0;">'+
+          '<div style="display:flex;flex-direction:column;gap:0;border-top:1px solid #FCE8F5;">'+
             // 1행: 이름
             '<div style="display:flex;align-items:center;gap:4px;padding:.5rem .75rem .3rem .75rem;">'+
-              '<div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;">'+
-                '<button style="font-size:9px;padding:1px 4px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);'+(isFirst?'opacity:.3;':'')+'" data-sup="'+s.id+'"'+(isFirst?' disabled':'')+'>▲</button>'+
-                '<button style="font-size:9px;padding:1px 4px;border:1px solid var(--br);border-radius:4px;background:var(--wh);cursor:pointer;color:var(--mu);'+(isLast?'opacity:.3;':'')+'" data-sdn="'+s.id+'"'+(isLast?' disabled':'')+'>▼</button>'+
-              '</div>'+
               '<input type="text" value="'+esc(s.name)+'" data-rename="'+s.id+'" style="flex:1;font-size:13px;font-weight:600;border:1.5px solid transparent;background:transparent;outline:none;padding:2px 4px;border-radius:4px;color:var(--tx);" onfocus="this.style.borderColor=\'var(--pr)\';this.style.background=\'var(--prl)\'" onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'">'+
             '</div>'+
             // 2행: 컨트롤
@@ -2027,31 +2037,30 @@ function rST(){
               '</div>'
             :'')+
           '</div>')+
-        '</div>'+
-        // 멤버 관리 섹션
-        '<div style="border-top:1px solid #F3D0E9;">'+
-          '<div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem .75rem;cursor:pointer;background:#F0F8FF;" data-expsm="'+s.id+'">'+
-            '<span style="font-size:12px;color:var(--bld);">👥 멤버 관리</span>'+
-            '<div style="display:flex;align-items:center;gap:6px;">'+
-              '<span style="font-size:11px;color:var(--bld);font-weight:700;">'+S.members.filter(function(m){return(m.studyIds||[]).indexOf(s.id)>=0;}).length+'명</span>'+
-              '<span style="font-size:12px;color:var(--mu);">'+(S.expandedStudyMem[s.id]?'▲':'▼')+'</span>'+
-            '</div>'+
-          '</div>'+
-          (S.expandedStudyMem[s.id]?
-            '<div style="padding:.5rem .75rem .75rem;">'+
-              '<div style="font-size:11px;color:var(--mu);margin-bottom:6px;">체크 → 참여 / 해제 → 제외</div>'+
-              '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">'+
-              S.members.map(function(m){
-                var isIn=(m.studyIds||[]).indexOf(s.id)>=0;
-                return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 8px;border:1.5px solid '+(isIn?'var(--pr)':'var(--br)')+';border-radius:20px;cursor:pointer;background:'+(isIn?'var(--prl)':'var(--wh)')+';">'+
-                  '<input type="checkbox" data-sasgn="'+s.id+'__'+m.id+'"'+(isIn?' checked':'')+' style="accent-color:var(--pr);">'+
-                  esc(m.name)+'</label>';
-              }).join('')+
+          // 멤버 관리 섹션
+          '<div style="border-top:1px solid #F3D0E9;">'+
+            '<div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem .75rem;cursor:pointer;background:#F0F8FF;" data-expsm="'+s.id+'">'+
+              '<span style="font-size:12px;color:var(--bld);">👥 멤버 관리</span>'+
+              '<div style="display:flex;align-items:center;gap:6px;">'+
+                '<span style="font-size:11px;color:var(--bld);font-weight:700;">'+memCnt+'명</span>'+
+                '<span style="font-size:12px;color:var(--mu);">'+(S.expandedStudyMem[s.id]?'▲':'▼')+'</span>'+
               '</div>'+
-
-            '</div>'
-          :'')+
-        '</div>'+
+            '</div>'+
+            (S.expandedStudyMem[s.id]?
+              '<div style="padding:.5rem .75rem .75rem;">'+
+                '<div style="font-size:11px;color:var(--mu);margin-bottom:6px;">체크 → 참여 / 해제 → 제외</div>'+
+                '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">'+
+                S.members.map(function(m){
+                  var isIn=(m.studyIds||[]).indexOf(s.id)>=0;
+                  return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 8px;border:1.5px solid '+(isIn?'var(--pr)':'var(--br)')+';border-radius:20px;cursor:pointer;background:'+(isIn?'var(--prl)':'var(--wh)')+';">'+
+                    '<input type="checkbox" data-sasgn="'+s.id+'__'+m.id+'"'+(isIn?' checked':'')+' style="accent-color:var(--pr);">'+
+                    esc(m.name)+'</label>';
+                }).join('')+
+                '</div>'+
+              '</div>'
+            :'')+
+          '</div>'
+          ):'')+
         '</div>';
       });
       h+='</div>';
@@ -2591,6 +2600,11 @@ function bAll(){
   qsa('[data-cattog]',function(el){el.addEventListener('click',function(){
     var cat=el.dataset.cattog;
     S.expandedCat[cat]=S.expandedCat[cat]===false?true:false;render();
+  });});
+  // 스터디 카드 접기/펼치기
+  qsa('[data-stcardtog]',function(el){el.addEventListener('click',function(){
+    var sid=el.dataset.stcardtog;
+    S.expandedStudyCard[sid]=!S.expandedStudyCard[sid];render();
   });});
   // 카테고리 순서 ▲▼
   qsa('[data-catup]',function(el){el.addEventListener('click',function(){
