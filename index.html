@@ -186,6 +186,19 @@ const FIREBASE_URL='https://kkang-twins-default-rtdb.firebaseio.com';
 const NOTICES_PATH=DB_PATH.replace('.json','_notices.json');
 function fbLoad(){return fetch(FIREBASE_URL+DB_PATH).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){return d||{};});}
 function fbSave(d){return fetch(FIREBASE_URL+DB_PATH,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).then(function(r){if(!r.ok)throw new Error(r.status);});}
+// 체크인 전용 부분 저장: PATCH는 지정한 키만 갱신/삭제(null)하고 나머지 체크인은 건드리지 않음.
+// 여러 명이 동시에 인증 버튼을 눌러도 서로의 체크인을 덮어쓰지 않기 위해 전체 PUT 대신 사용.
+function fbPatchCheckins(patchObj){
+  var path=DB_PATH.replace('.json','/checkins.json');
+  return fetch(FIREBASE_URL+path,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patchObj)}).then(function(r){if(!r.ok)throw new Error(r.status);});
+}
+function ckPatchOf(key){var o={};o[key]=(S.checkins[key]!==undefined)?S.checkins[key]:null;return o;}
+async function persistCk(patchObj){
+  S.saving=true;render();
+  try{await fbPatchCheckins(patchObj);}
+  catch(e){alert('저장 실패. 인터넷 연결을 확인해주세요.');}
+  S.saving=false;render();
+}
 function fbLoadNotices(){
   return fetch(FIREBASE_URL+NOTICES_PATH).then(function(r){if(!r.ok)return{};return r.json();}).then(function(d){return d||{};}).catch(function(){return{};});
 }
@@ -2427,7 +2440,7 @@ function bAll(){
     var cur=rtnCk(sid,dk,mid);
     setRtnCk(sid,dk,mid,cur===val?null:val);
     if(cur===null&&val==='done')showCelebration('✅');
-    persist();render();
+    render();persistCk(ckPatchOf(rtnCkKey(sid,dk,mid)));
   });});
   // 루틴 월별 관리 버튼
   qsa('[data-rtn-mgr]',function(el){el.addEventListener('click',function(e){
@@ -2476,7 +2489,7 @@ function bAll(){
   qsa('[data-rtn-memo]',function(el){el.addEventListener('blur',function(){
     var p=el.dataset.rtnMemo.split('__');var sid=p[0],dk=p[1],mid=p[2];
     setRtnMemo(sid,dk,mid,el.value.trim());
-    persist();
+    persistCk(ckPatchOf(rtnMemoKey(sid,dk,mid)));
   });});
   // 루틴 탭 전환 (check / notice)
   qsa('[data-rtn-tab]',function(el){el.addEventListener('click',function(e){
@@ -2502,14 +2515,14 @@ function bAll(){
     var p=S.calMemoKey.split('__');
     var t=document.getElementById('cal-memo-input');
     setRtnMemo(p[0],p[1],p[2],t?t.value.trim():'');
-    S.calMemoKey=null;persist();render();
+    S.calMemoKey=null;render();persistCk(ckPatchOf(rtnMemoKey(p[0],p[1],p[2])));
   });
   // 메모 삭제
   on('cal-memo-del',function(){
     if(!S.calMemoKey)return;
     var p=S.calMemoKey.split('__');
     setRtnMemo(p[0],p[1],p[2],'');
-    S.calMemoKey=null;persist();render();
+    S.calMemoKey=null;render();persistCk(ckPatchOf(rtnMemoKey(p[0],p[1],p[2])));
   });
   // 메모 팝업 닫기
   on('cal-memo-close',function(){S.calMemoKey=null;render();});
@@ -2527,7 +2540,7 @@ function bAll(){
     setCk(sid,wn,mid,next);
     if(next==='done')showCelebration('🎉');
     else if(next==='vacation')showCelebration('🏖️');
-    render();persist();
+    render();persistCk(ckPatchOf(ckKey(sid,wn,mid)));
     // 완주 체크 (render 후)
     if(next==='done'){
       var _s=S.studies.filter(function(x){return x.id===sid;})[0];
@@ -2540,7 +2553,7 @@ function bAll(){
   // 관리자 인증 수정
   qsa('[data-ack]',function(el){el.addEventListener('click',function(){
     var p=el.dataset.ack.split('__');var mid=p[0],sid=p[1],wn=+p[2],val=p[3];
-    setCk(sid,wn,mid,val==='none'?null:val);persist();
+    setCk(sid,wn,mid,val==='none'?null:val);persistCk(ckPatchOf(ckKey(sid,wn,mid)));
   });});
   // 전체현황 멤버 클릭
   qsa('[data-vmem]',function(el){el.addEventListener('click',function(){S.viewMemberId=el.dataset.vmem;S.expandedVmCat={};S.expandedVmSt={};render();});});
@@ -2577,7 +2590,7 @@ function bAll(){
   qsa('.rpt-cancel',function(el){el.addEventListener('click',function(){S.editKey=null;render();});});
   qsa('.rpt-pick',function(el){el.addEventListener('click',function(){
     var p=el.dataset.pick.split('__');var sid=p[0],wn=+p[1],mid=p[2],val=p[3];
-    setCk(sid,wn,mid,val==='none'?null:val);S.editKey=null;persist();
+    setCk(sid,wn,mid,val==='none'?null:val);S.editKey=null;persistCk(ckPatchOf(ckKey(sid,wn,mid)));
   });});
   // 스터디 신청
   qsa('[data-do-apply]',function(el){el.addEventListener('click',function(){
@@ -2798,10 +2811,11 @@ function bAll(){
     var open=openWeeks(s);
     if(!enrolled.length||!open.length){alert('배정된 멤버나 열린 주차가 없어요.');return;}
     if(!confirm('['+s.name+'] 참여 멤버 '+enrolled.length+'명 × 열린 주차 '+open.length+'개\n총 '+(enrolled.length*open.length)+'개를 전체 인증완료 처리할까요?'))return;
+    var patch={};
     enrolled.forEach(function(m){
-      open.forEach(function(w){setCk(sid,w.num,m.id,'done');});
+      open.forEach(function(w){setCk(sid,w.num,m.id,'done');patch[ckKey(sid,w.num,m.id)]='done';});
     });
-    persist();
+    persistCk(patch);
   });});
   qsa('[data-sasgn]',function(el){el.addEventListener('change',function(e){
     var p=e.target.dataset.sasgn.split('__');var sid=p[0],mid=p[1];
@@ -2829,7 +2843,9 @@ function doDM(id){
 }
 async function persist(){
   S.saving=true;render();
-  try{await fbSave({studies:S.studies,members:S.members,checkins:S.checkins,catOrder:S.catOrder,events:S.events});}
+  // 체크인은 별도(persistCk/fbPatchCheckins)로만 저장하며, 여기서는 절대 건드리지 않는다.
+  // (동시 접속 중인 다른 사용자의 체크인을 오래된 로컬 스냅샷으로 덮어쓰는 것을 방지)
+  try{await fetch(FIREBASE_URL+DB_PATH,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({studies:S.studies,members:S.members,catOrder:S.catOrder,events:S.events})}).then(function(r){if(!r.ok)throw new Error(r.status);});}
   catch(e){alert('저장 실패. 인터넷 연결을 확인해주세요.');}
   S.saving=false;render();
 }
