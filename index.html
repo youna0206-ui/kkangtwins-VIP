@@ -194,7 +194,7 @@ function fbPatchCheckins(patchObj){
 }
 function ckPatchOf(key){var o={};o[key]=(S.checkins[key]!==undefined)?S.checkins[key]:null;return o;}
 async function persistCk(patchObj){
-  S.saving=true;render();
+  S.saving=true;
   try{await fbPatchCheckins(patchObj);}
   catch(e){alert('저장 실패. 인터넷 연결을 확인해주세요.');}
   S.saving=false;render();
@@ -424,7 +424,7 @@ function getStudyBadge(s,m){
   if(total>=8&&done>=8)return{badge:'🥈',label:'은메달',color:'#6B7280',bg:'#F3F4F6',border:'#9CA3AF'};
   return null;
 }
-// 루틴 월별 뱃지: 해당 월 90% 이상 달성 시 💎
+// 루틴 월별 뱃지: 해당 월 경과일 대비 50% 이상 인증 시 💎
 function getRoutineMonthBadge(sid,mid,yr,mo){
   var lastDate=new Date(yr,mo+1,0).getDate();
   var today=new Date();var done=0,total=0;
@@ -435,9 +435,28 @@ function getRoutineMonthBadge(sid,mid,yr,mo){
   }
   return total>0&&done/total>=0.5;
 }
+// 루틴 누적 다이아 개수: 체크인 기록이 있는 달들 중 50% 이상 달성한 달의 개수(매달 쌓임)
+function getRoutineDiamondCount(sid,mid){
+  var yms={};
+  Object.keys(S.checkins).forEach(function(k){
+    var p=k.split('__');
+    if(p[0]===sid&&p[1]==='date'&&p[3]===mid)yms[p[2].slice(0,7)]=true;
+  });
+  var cnt=0;
+  Object.keys(yms).forEach(function(ym){
+    var yr=+ym.slice(0,4),mo=+ym.slice(5,7)-1;
+    if(getRoutineMonthBadge(sid,mid,yr,mo))cnt++;
+  });
+  return cnt;
+}
 function getMemberBadges(m){
   var badges=[];
   S.studies.filter(function(s){return s.active&&(m.studyIds||[]).indexOf(s.id)>=0;}).forEach(function(s){
+    if(s.cat==='루틴 체크'){
+      var rc=getRoutineDiamondCount(s.id,m.id);
+      for(var i=0;i<rc;i++)badges.push({study:s,badge:{badge:'💎',label:'다이아',color:'#22D3EE',bg:'#ECFEFF',border:'#22D3EE'}});
+      return;
+    }
     var b=getStudyBadge(s,m);if(b)badges.push({study:s,badge:b});
   });
   return badges;
@@ -545,8 +564,7 @@ function rRoutineStudy(s, m){
   var todaySt=rtnCk(s.id,todayKey,m.id);
   var todayMemo=rtnMemo(s.id,todayKey,m.id);
   var doneCnt=days.filter(function(d){return rtnCk(s.id,toDateKey(d),m.id)==='done';}).length;
-  var now=new Date();
-  var hasBadge=getRoutineMonthBadge(s.id,m.id,now.getFullYear(),now.getMonth());
+  var diaCnt=getRoutineDiamondCount(s.id,m.id);
 
   var h='<div style="background:var(--wh);border:1.5px solid '+(todaySt==='done'?'var(--pr)':todaySt==='vacation'?'#3B82F6':'#F3D0E9')+';border-radius:var(--r);overflow:hidden;margin-left:4px;margin-bottom:6px;">';
 
@@ -554,7 +572,7 @@ function rRoutineStudy(s, m){
   h+='<div style="padding:.75rem 1rem;">';
   h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
   h+='<span style="flex:1;font-size:14px;font-weight:700;cursor:pointer;" data-expci="'+s.id+'">'+esc(s.name)+'</span>';
-  if(hasBadge)h+='<span title="이번달 90% 달성!">💎</span>';
+  if(diaCnt)h+='<span title="누적 다이아 '+diaCnt+'개 (매달 50% 이상 인증 시 1개씩 적립)">💎×'+diaCnt+'</span>';
   h+='<span style="font-size:11px;color:var(--mu);">'+doneCnt+'/7일</span>';
   h+='<span style="font-size:12px;color:var(--mu);cursor:pointer;" data-expci="'+s.id+'">'+(isExpCI?'▲':'▼')+'</span>';
   h+='</div>';
@@ -1056,7 +1074,7 @@ function rMP(){
     var prevYm=mo===0?(yr-1)+'-12':yr+'-'+(mo+'').padStart(2,'0');
     var nextYm=mo===11?(yr+1)+'-01':yr+'-'+(mo+2+'').padStart(2,'0');
     var canNext=new Date(yr,mo+1,1)<=today;
-    h+='<div class="sec rb" style="padding:.875rem;">';
+    h+='<div class="sec" style="padding:.875rem;">';
     h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
     h+='<div style="font-size:13px;font-weight:700;color:var(--pr);">✅ 루틴 현황</div>';
     h+='<div style="display:flex;align-items:center;gap:6px;">';
@@ -1110,7 +1128,7 @@ function rMP(){
         return mem.id!==m.id&&(mem.studyIds||[]).indexOf(s.id)>=0;
       });
       if(!others.length)return;
-      h+='<div class="sec rb" style="padding:.875rem;margin-top:0;">';
+      h+='<div class="sec" style="padding:.875rem;margin-top:0;">';
       h+='<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:10px;">👥 '+esc(s.name)+' 멤버 현황</div>';
       var otherRows=others.map(function(mem){
         var done2=0,total2=0;
@@ -1588,7 +1606,7 @@ function rOV(){
     var nextYm2=mo2===11?(yr2+1)+'-01':yr2+'-'+(mo2+2+'').padStart(2,'0');
     var canNext2=new Date(yr2,mo2+1,1)<=today2;
     var lastDate2=new Date(yr2,mo2+1,0).getDate();
-    h+='<div class="sec rb" style="padding:.875rem;margin-top:8px;">';
+    h+='<div class="sec" style="padding:.875rem;margin-top:8px;">';
     h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
     h+='<div style="font-size:13px;font-weight:700;color:var(--pr);">✅ 루틴 현황 <span style="font-size:11px;font-weight:400;color:var(--mu);">'+yr2+'년 '+(mo2+1)+'월</span></div>';
     h+='<div style="display:flex;align-items:center;gap:6px;">';
@@ -2153,6 +2171,7 @@ function rST(){
           if(mcatOpen){
             catStudies.forEach(function(s){
               var assigned=(m.studyIds||[]).indexOf(s.id)>=0;
+              var isRoutine=s.cat==='루틴 체크';
               var aw=allWeeks(s);
               var curWk=getCurrentWeek(s);
               var mstKey=m.id+'__'+s.id;
@@ -2165,13 +2184,17 @@ function rST(){
               h+='<label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;font-size:13px;font-weight:'+(assigned?'700':'500')+';color:'+(assigned?'var(--pr)':'var(--tx)')+';">'+
                 '<input type="checkbox" data-asgn="'+m.id+'__'+s.id+'"'+(assigned?' checked':'')+' style="width:15px;height:15px;accent-color:var(--pr);">'+
                 esc(s.name)+'</label>';
-              if(assigned&&aw.length){
+              if(assigned&&!isRoutine&&aw.length){
                 h+='<span style="font-size:11px;color:var(--mu);">✅'+doneCount+' 🏖️'+vacCount+'/'+aw.length+'</span>';
                 h+='<span style="font-size:12px;color:var(--mu);cursor:pointer;padding:2px 6px;" data-memstog="'+esc(mstKey)+'">'+(mstOpen?'▲':'▼')+'</span>';
               }
               h+='</div>';
+              // 루틴 체크 스터디는 날짜형 위젯으로 렌더링 (주차형 아님)
+              if(assigned&&isRoutine){
+                h+='<div style="background:#FAFAFA;padding:.4rem .65rem;">'+rRoutineStudy(s,m)+'</div>';
+              }
               // 인증 주차 (토글, 세로 한 줄씩)
-              if(assigned&&aw.length&&mstOpen){
+              if(assigned&&!isRoutine&&aw.length&&mstOpen){
                 h+='<div style="background:#FAFAFA;padding:.4rem .65rem;">';
                 aw.forEach(function(w){
                   var status=ck(s.id,w.num,m.id);
@@ -2246,7 +2269,7 @@ function bAll(){
     render();
   });});
   on('mlb',function(){S.tab='mlogin';render();});on('alb',function(){S.tab='alogin';render();});
-  on('lo',function(){S.isAdmin=false;S.loggedMember=null;S.tab='mlogin';render();});
+  on('lo',function(){S.isAdmin=false;S.loggedMember=null;S.tab='mlogin';try{localStorage.removeItem('kkang_member_id');}catch(e){}render();});
   // 이미지 에러 처리
   qsa('.notice-img',function(el){el.addEventListener('error',function(){el.style.display='none';});});
   // 이미지 파일 업로드
@@ -2367,7 +2390,10 @@ function bAll(){
     var m=S.members.filter(function(x){return x.id===id;})[0];
     if(!m||m.pw!==pw){S.memberErr='비밀번호가 틀렸어요';render();return;}
     S.loggedMember=m;S.memberErr='';S.selMemId='';
-    try{var lt=localStorage.getItem('kkang_last_tab');S.tab=(lt&&['ci','mp','apply','notice','cal','cp'].indexOf(lt)>=0)?lt:'ci';}catch(e){S.tab='ci';}
+    try{
+      var lt=localStorage.getItem('kkang_last_tab');S.tab=(lt&&['ci','mp','apply','notice','cal','cp'].indexOf(lt)>=0)?lt:'ci';
+      localStorage.setItem('kkang_member_id',m.id);
+    }catch(e){S.tab='ci';}
     render();
   });
   on('adl',function(){
@@ -2842,7 +2868,7 @@ function doDM(id){
   if(S.expandedMem===id)S.expandedMem=null;persist();
 }
 async function persist(){
-  S.saving=true;render();
+  S.saving=true;
   // 체크인은 별도(persistCk/fbPatchCheckins)로만 저장하며, 여기서는 절대 건드리지 않는다.
   // (동시 접속 중인 다른 사용자의 체크인을 오래된 로컬 스냅샷으로 덮어쓰는 것을 방지)
   try{await fetch(FIREBASE_URL+DB_PATH,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({studies:S.studies,members:S.members,catOrder:S.catOrder,events:S.events})}).then(function(r){if(!r.ok)throw new Error(r.status);});}
@@ -2884,6 +2910,20 @@ function applyData(d){
   // 루틴 체크가 catOrder에 없으면 맨 앞에 추가
   if(S.catOrder.indexOf('루틴 체크')<0)S.catOrder.unshift('루틴 체크');
   S.members.sort(function(a,b){try{return a.name.localeCompare(b.name,'ko');}catch(e){return a.name<b.name?-1:a.name>b.name?1:0;}});
+  // 자동 로그인: 이 기기에서 마지막으로 로그인했던 멤버가 있으면 비번 없이 바로 로그인
+  try{
+    var savedMid=localStorage.getItem('kkang_member_id');
+    if(savedMid){
+      var savedM=S.members.filter(function(x){return x.id===savedMid;})[0];
+      if(savedM){
+        S.loggedMember=savedM;
+        var lt=localStorage.getItem('kkang_last_tab');
+        S.tab=(lt&&['ci','mp','apply','notice','cal','cp'].indexOf(lt)>=0)?lt:'ci';
+      } else {
+        localStorage.removeItem('kkang_member_id');
+      }
+    }
+  }catch(e){}
   S.loading=false;render();
 }
 (async function(){
