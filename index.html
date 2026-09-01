@@ -581,6 +581,7 @@ function rRoutineStudy(s, m, showLeave){
   h+='<span style="flex:1;font-size:14px;font-weight:700;cursor:pointer;" data-expci="'+s.id+'">'+esc(s.name)+'</span>';
   if(diaCnt)h+='<span title="누적 다이아 '+diaCnt+'개 (매달 50% 이상 인증 시 1개씩 적립)">💎×'+diaCnt+'</span>';
   h+='<span style="font-size:11px;color:var(--mu);">'+doneCnt+'/7일</span>';
+  if(showLeave)h+='<button data-cancel-apply="'+s.id+'" title="스터디 탈퇴" style="border:none;background:none;cursor:pointer;font-size:14px;padding:2px;line-height:1;">🚫</button>';
   h+='<span style="font-size:12px;color:var(--mu);cursor:pointer;" data-expci="'+s.id+'">'+(isExpCI?'▲':'▼')+'</span>';
   h+='</div>';
 
@@ -653,7 +654,6 @@ function rRoutineStudy(s, m, showLeave){
         });
       }
     }
-    if(showLeave)h+='<div style="text-align:right;margin-top:4px;"><button class="abtn sec" data-cancel-apply="'+s.id+'" style="font-size:11px;padding:4px 10px;color:var(--mu);">🚫 이 스터디 탈퇴</button></div>';
     h+='</div>';
   }
   h+='</div>';
@@ -801,6 +801,7 @@ function rCI(){
         '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'+
           '<span style="font-size:11px;color:var(--mu);">'+ss.dn+'/'+ss.t+'주</span>'+
           '<span style="font-size:12px;font-weight:700;color:'+(ss.pct===100?'var(--gr)':'var(--pr)')+';">'+ss.pct+'%</span>'+
+          '<button data-cancel-apply="'+s.id+'" title="스터디 탈퇴" style="border:none;background:none;cursor:pointer;font-size:14px;padding:2px;line-height:1;">🚫</button>'+
           '<span style="font-size:13px;color:rgba(255,255,255,.85);">'+(isExpCI?'▲':'▼')+'</span>'+
         '</div></div>';
       if(isExpCI){
@@ -888,7 +889,6 @@ function rCI(){
           }
           h+='</div>';
         });
-        h+='<div style="text-align:right;margin-top:6px;"><button class="abtn sec" data-cancel-apply="'+s.id+'" style="font-size:11px;padding:4px 10px;color:var(--mu);">🚫 이 스터디 탈퇴</button></div>';
         h+='</div>';
       }
       h+='</div>';
@@ -2656,14 +2656,15 @@ function bAll(){
     showToast('✅ '+esc(s?s.name:'스터디')+'에 신청했어요!','success');
     render();
   });});
-  qsa('[data-cancel-apply]',function(el){el.addEventListener('click',function(){
+  qsa('[data-cancel-apply]',function(el){el.addEventListener('click',function(e){
+    e.stopPropagation();
     var m=curLoggedMember();if(!m)return;
     var sid=el.dataset.cancelApply;
     var s=S.studies.filter(function(x){return x.id===sid;})[0];
-    if(!confirm((s?s.name:'스터디')+'\n신청을 취소할까요?'))return;
+    if(!confirm((s?s.name:'스터디')+'\n탈퇴(신청취소) 할까요?'))return;
     m.studyIds=(m.studyIds||[]).filter(function(x){return x!==sid;});
     var ix=S.members.findIndex(function(x){return x.id===m.id;});if(ix>=0)S.members[ix]=m;persist();
-    showToast('🚫 '+(s?esc(s.name):'스터디')+'  신청을 취소했어요.','cancel');
+    showToast('🚫 '+(s?esc(s.name):'스터디')+'  탈퇴했어요.','cancel');
     render();
   });});
   // 설정 서브탭
