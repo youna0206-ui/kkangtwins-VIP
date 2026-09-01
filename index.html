@@ -557,7 +557,7 @@ function rAL(){
     '<button class="abtn full" id="adl">로그인</button></div></div></div>';
 }
 // ── 루틴 체크 날짜형 렌더링 ──
-function rRoutineStudy(s, m){
+function rRoutineStudy(s, m, showLeave){
   var offset=(S.routineWeekOffset&&S.routineWeekOffset[s.id])||0;
   var mon=getThisWeekMonday();
   mon.setDate(mon.getDate()+offset*7);
@@ -653,6 +653,7 @@ function rRoutineStudy(s, m){
         });
       }
     }
+    if(showLeave)h+='<div style="text-align:right;margin-top:4px;"><button class="abtn sec" data-cancel-apply="'+s.id+'" style="font-size:11px;padding:4px 10px;color:var(--mu);">🚫 이 스터디 탈퇴</button></div>';
     h+='</div>';
   }
   h+='</div>';
@@ -786,7 +787,7 @@ function rCI(){
     if(!isCatOpen){return;}
     catS.forEach(function(s){
       // 루틴 체크는 날짜형 렌더링
-      if(cat==='루틴 체크'){h+=rRoutineStudy(s,m);return;}
+      if(cat==='루틴 체크'){h+=rRoutineStudy(s,m,true);return;}
       var aw=allWeeks(s);var isExpCI=S.expandedCI[s.id]===true;
       var ss=sMSt(s,m);
       h+='<div style="background:var(--wh);border:1.5px solid #F3D0E9;border-radius:var(--r);overflow:hidden;margin-left:4px;">';
@@ -887,6 +888,7 @@ function rCI(){
           }
           h+='</div>';
         });
+        h+='<div style="text-align:right;margin-top:6px;"><button class="abtn sec" data-cancel-apply="'+s.id+'" style="font-size:11px;padding:4px 10px;color:var(--mu);">🚫 이 스터디 탈퇴</button></div>';
         h+='</div>';
       }
       h+='</div>';
@@ -1167,12 +1169,30 @@ function rMP(){
 function rApply(){
   var m=curLoggedMember();
   if(!m)return S.isAdmin?'<div class="sec" style="text-align:center;font-size:14px;color:var(--mu);">강둥맘 멤버를 찾을 수 없어요. 설정에서 이름에 "강둥맘"이 포함된 멤버를 추가해주세요.</div>':rML();
-  var open=S.studies.filter(function(s){return s.active&&s.applyOpen;});
+  var myStudies=sortStudiesByName(S.studies.filter(function(s){return s.active&&(m.studyIds||[]).indexOf(s.id)>=0;}));
+  var open=S.studies.filter(function(s){return s.active&&s.applyOpen&&(m.studyIds||[]).indexOf(s.id)<0;});
   var h='<div class="stack"><div class="sec">'+
     '<div style="font-size:15px;font-weight:700;margin-bottom:4px;">📝 스터디 신청</div>'+
     '<div style="font-size:13px;color:var(--mu);">신청하면 ✅ 내 인증 탭에 바로 반영돼요</div></div>';
+
+  // 내가 신청한 스터디 (신청 마감 여부와 관계없이 언제든 직접 취소 가능)
+  if(myStudies.length){
+    h+='<div class="sec" style="padding:.875rem 1rem;">'+
+      '<div style="font-size:13px;font-weight:700;color:var(--pr);margin-bottom:8px;">✅ 내가 신청한 스터디</div>';
+    myStudies.forEach(function(s){
+      var isRoutine=s.cat==='루틴 체크';
+      var aw=allWeeks(s);
+      h+='<div class="apply-card"><div class="rb" style="margin-bottom:0;">'+
+        '<div><div style="font-size:14px;font-weight:600;">'+esc(s.name)+'</div>'+
+          '<div style="font-size:11px;color:var(--mu);margin-top:2px;">'+(isRoutine?'날짜별 루틴':aw.length+'주 진행')+'</div></div>'+
+        '<button class="abtn sec" data-cancel-apply="'+s.id+'" style="font-size:12px;padding:5px 12px;">취소</button>'+
+      '</div></div>';
+    });
+    h+='</div>';
+  }
+
   if(!open.length){
-    h+='<div class="empty">현재 신청 가능한 스터디가 없어요</div>';
+    if(!myStudies.length)h+='<div class="empty">현재 신청 가능한 스터디가 없어요</div>';
   } else {
     // 카테고리별 그룹핑
     var applyCats=[];
@@ -1180,6 +1200,7 @@ function rApply(){
       if(open.some(function(s){return s.cat===c;})&&applyCats.indexOf(c)<0)applyCats.push(c);
     });
     open.forEach(function(s){if(applyCats.indexOf(s.cat)<0)applyCats.push(s.cat);});
+    h+='<div style="font-size:13px;font-weight:700;color:var(--pr);padding:0 .25rem;">📝 신청 가능한 스터디</div>';
 
     applyCats.forEach(function(cat){
       var catStudies=sortStudiesByName(open.filter(function(s){return s.cat===cat;}));
