@@ -426,7 +426,7 @@ function getStudyBadge(s,m){
   var aw=allWeeks(s);if(!aw.length)return null;
   var done=aw.filter(function(w){return ck(s.id,w.num,m.id)==='done';}).length;
   var total=aw.length;var allDone=done===total;
-  if(total===5&&allDone)return{badge:'💎',label:'다이아',color:'#22D3EE',bg:'#ECFEFF',border:'#22D3EE'};
+  if((total===4||total===5)&&allDone)return{badge:'💎',label:'다이아',color:'#22D3EE',bg:'#ECFEFF',border:'#22D3EE'};
   if(total>=8&&allDone)return{badge:'🥇',label:'금메달',color:'#D97706',bg:'#FEF3C7',border:'#D97706'};
   if(total>=8&&done>=8)return{badge:'🥈',label:'은메달',color:'#6B7280',bg:'#F3F4F6',border:'#9CA3AF'};
   return null;
