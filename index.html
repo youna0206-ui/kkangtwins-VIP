@@ -410,12 +410,28 @@ function mCurSt(m){
   my.forEach(function(s){openWeeks(s).forEach(function(w){tot++;if(ck(s.id,w.num,m.id)==='done')dn++;});});
   return{total:tot,done:dn,pct:tot?Math.round(dn/tot*100):0};
 }
+function getSkipDays(startDate,now){
+  // 등록된 휴강 기간 중 startDate~now 사이에 겹치는 일수를 모두 더해서 반환
+  if(!S.skipWeeks||!S.skipWeeks.length)return 0;
+  var total=0;
+  S.skipWeeks.forEach(function(sw){
+    if(!sw.startDate||!sw.endDate)return;
+    var swStart=new Date(sw.startDate);swStart.setHours(0,0,0,0);
+    var swEnd=new Date(sw.endDate);swEnd.setHours(0,0,0,0);swEnd.setDate(swEnd.getDate()+1);//종료일 포함(배타적 끝)
+    var ovStart=swStart>startDate?swStart:startDate;
+    var ovEnd=swEnd<now?swEnd:now;
+    if(ovEnd>ovStart)total+=Math.round((ovEnd-ovStart)/(24*60*60*1000));
+  });
+  return total;
+}
 function getCurrentWeek(s){
   if(!s.startDate)return 0;
   var start=new Date(s.startDate);start.setHours(0,0,0,0);
   var now=new Date();now.setHours(0,0,0,0);
   var diff=now-start;
   if(diff<0)return 0;
+  diff-=getSkipDays(start,now)*24*60*60*1000;
+  if(diff<0)diff=0;
   return Math.floor(diff/(7*24*60*60*1000))+1;
 }
 function isStudyComplete(s,m){
@@ -484,7 +500,7 @@ var S={
   isAdmin:false,loggedMember:null,adminErr:'',memberErr:'',selMemId:'',
   newMember:'',expandedMem:null,expandedStudy:null,expandedMemCat:{},expandedMemSt:{},expandedVmCat:{},expandedVmSt:{},rptTab:'chart',
   chgErr:'',chgOk:'',viewMemberId:null,
-  settingsTab:'study',expandedWeek:null,expandedCI:{},routineWeekOffset:{},rtnTab:{},calMemoKey:null,mpRtnYMs:{},routineCalSid:null,routineCalMem:null,routineCalYM:'',dragSid:null,catOrder:[],expandedCat:{},expandedStudyCard:{},
+  settingsTab:'study',expandedWeek:null,expandedCI:{},routineWeekOffset:{},rtnTab:{},calMemoKey:null,mpRtnYMs:{},routineCalSid:null,routineCalMem:null,routineCalYM:'',dragSid:null,catOrder:[],expandedCat:{},expandedStudyCard:{},skipWeeks:[],
   calYear:new Date().getFullYear(),calMonth:new Date().getMonth(),events:{},notices:{},
   editNoticeId:null,expandedNotice:{},expandedSnotice:{},editSnoticeId:null,expandedWnote:{},expandedStudyMem:{},editNoticeId:null,expandedNotice:{},
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
@@ -1950,6 +1966,26 @@ function rST(){
       '<div style="font-size:11px;color:var(--mu);margin-top:6px;">카테고리: 루틴 체크 (자동)</div>'+
     '</div>';
 
+    // ── 휴강 주 관리 ──
+    h+='<div style="background:var(--wh);border:1.5px solid #FDE68A;border-radius:var(--r);padding:.875rem 1rem;">'+
+      '<div style="font-size:13px;font-weight:600;color:#D97706;margin-bottom:8px;">🏖️ 휴강 주 관리</div>'+
+      '<div style="font-size:11px;color:var(--mu);margin-bottom:8px;">등록한 기간만큼 모든 활성 스터디의 "이번주" 계산이 자동으로 밀려요. 시작일은 변경되지 않아요.</div>'+
+      '<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;flex-wrap:wrap;">'+
+        '<div style="flex:1;min-width:120px;"><div style="font-size:11px;color:var(--mu);margin-bottom:3px;">시작일</div><input type="date" id="sw-start" class="ainp" style="width:100%;"></div>'+
+        '<div style="flex:1;min-width:120px;"><div style="font-size:11px;color:var(--mu);margin-bottom:3px;">종료일</div><input type="date" id="sw-end" class="ainp" style="width:100%;"></div>'+
+        '<div style="flex:1;min-width:120px;"><div style="font-size:11px;color:var(--mu);margin-bottom:3px;">이름</div><input type="text" id="sw-label" class="ainp" placeholder="예: 추석 연휴" style="width:100%;"></div>'+
+        '<button class="abtn" id="add-skipweek" style="background:linear-gradient(135deg,#F59E0B,#D97706);">추가</button>'+
+      '</div>'+
+      (S.skipWeeks&&S.skipWeeks.length?('<div style="display:flex;flex-direction:column;gap:6px;">'+
+        S.skipWeeks.slice().sort(function(a,b){return a.startDate<b.startDate?1:-1;}).map(function(sw){
+          return '<div style="display:flex;align-items:center;gap:8px;padding:.4rem .6rem;background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--rs);">'+
+            '<span style="font-size:12px;flex:1;"><b>'+esc(sw.label||'휴강')+'</b> · '+esc(sw.startDate)+' ~ '+esc(sw.endDate)+'</span>'+
+            '<button data-delsw="'+esc(sw.id)+'" style="font-size:11px;padding:2px 8px;border-radius:20px;border:1.5px solid #FECACA;background:#FFF5F5;color:var(--rd);cursor:pointer;">삭제</button>'+
+          '</div>';
+        }).join('')+
+      '</div>'):'')+
+    '</div>';
+
     cats.forEach(function(cat){
       var catStudies=sortStudiesByName(S.studies.filter(function(s){return s.cat===cat;}));
       var ci2=cats.indexOf(cat);
@@ -2827,6 +2863,24 @@ function bAll(){
     showToast('✅ 루틴이 추가됐어요!','success');
     persist();render();
   });
+  // 휴강 주 추가/삭제
+  on('add-skipweek',function(){
+    var st=g('sw-start'),en=g('sw-end'),lb=g('sw-label');
+    var stv=st?st.value:'';var env=en?en.value:'';
+    if(!stv){alert('시작일을 선택해주세요');return;}
+    if(!env)env=stv;
+    if(env<stv){alert('종료일이 시작일보다 빠를 수 없어요');return;}
+    S.skipWeeks=S.skipWeeks||[];
+    S.skipWeeks.push({id:'sw'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),startDate:stv,endDate:env,label:lb?lb.value.trim():''});
+    if(st)st.value='';if(en)en.value='';if(lb)lb.value='';
+    showToast('🏖️ 휴강 주가 추가됐어요!','success');
+    persist();render();
+  });
+  qsa('[data-delsw]',function(el){el.addEventListener('click',function(){
+    if(!confirm('이 휴강 주 설정을 삭제할까요? 삭제하면 해당 기간만큼 다시 정상 진행돼요.'))return;
+    S.skipWeeks=(S.skipWeeks||[]).filter(function(x){return x.id!==el.dataset.delsw;});
+    persist();render();
+  });});
   // 멤버 관리
   var nm=g('nm');if(nm){nm.addEventListener('input',function(e){S.newMember=e.target.value;});nm.addEventListener('keydown',function(e){if(e.key==='Enter')doAM();});}
   var nmpw=g('nm-pw');if(nmpw)nmpw.addEventListener('keydown',function(e){if(e.key==='Enter')doAM();});
@@ -2901,7 +2955,7 @@ async function persist(){
   S.saving=true;
   // 체크인은 별도(persistCk/fbPatchCheckins)로만 저장하며, 여기서는 절대 건드리지 않는다.
   // (동시 접속 중인 다른 사용자의 체크인을 오래된 로컬 스냅샷으로 덮어쓰는 것을 방지)
-  try{await fetch(FIREBASE_URL+DB_PATH,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({studies:S.studies,members:S.members,catOrder:S.catOrder,events:S.events})}).then(function(r){if(!r.ok)throw new Error(r.status);});}
+  try{await fetch(FIREBASE_URL+DB_PATH,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({studies:S.studies,members:S.members,catOrder:S.catOrder,events:S.events,skipWeeks:S.skipWeeks})}).then(function(r){if(!r.ok)throw new Error(r.status);});}
   catch(e){alert('저장 실패. 인터넷 연결을 확인해주세요.');}
   S.saving=false;render();
 }
@@ -2933,6 +2987,7 @@ function applyData(d){
   var savedOrder=d&&d.catOrder&&d.catOrder.length?d.catOrder:[];
   // 저장된 순서 기준으로 정렬, 새 카테고리는 맨 뒤에 추가
   S.events=d&&d.events?d.events:{};
+  S.skipWeeks=d&&d.skipWeeks?d.skipWeeks:[];
   // 루틴 체크 카테고리 항상 포함
   if(allCats.indexOf('루틴 체크')<0)allCats.unshift('루틴 체크');
   S.catOrder=savedOrder.filter(function(c){return allCats.indexOf(c)>=0;});
@@ -2979,3 +3034,4 @@ function applyData(d){
 </script>
 </body>
 </html>
+
