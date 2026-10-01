@@ -227,6 +227,13 @@ function setRtnMemo(sid,dk,mid,val){var k=rtnMemoKey(sid,dk,mid);if(val)S.checki
 function cardCkKey(sid,did,cid,mid){return sid+'__card__'+did+'__'+cid+'__'+mid;}
 function cardCk(sid,did,cid,mid){return S.checkins[cardCkKey(sid,did,cid,mid)]||null;}
 function setCardCk(sid,did,cid,mid,val){var k=cardCkKey(sid,did,cid,mid);if(val)S.checkins[k]=val;else delete S.checkins[k];}
+// 루틴 체크 - 날짜별 카드 선택 (연결된 카드덱에서 그 날 한 카드들, 여러 장 가능). 키: sid+'__rcards__'+dk+'__'+mid, 값: 콤마구분 카드id
+function rtnCardsKey(sid,dk,mid){return sid+'__rcards__'+dk+'__'+mid;}
+function rtnCards(sid,dk,mid){var v=S.checkins[rtnCardsKey(sid,dk,mid)];return v?v.split(','):[];}
+function setRtnCards(sid,dk,mid,arr){var k=rtnCardsKey(sid,dk,mid);if(arr&&arr.length)S.checkins[k]=arr.join(',');else delete S.checkins[k];}
+function toggleRtnCard(sid,dk,mid,cid){var arr=rtnCards(sid,dk,mid);var i=arr.indexOf(cid);if(i>=0)arr.splice(i,1);else arr.push(cid);setRtnCards(sid,dk,mid,arr);return arr;}
+// 루틴 체크 스터디에 연결된 카드덱 (관리자가 지정, s.routineDeckId)
+function routineDeck(s){if(!s||!s.routineDeckId||!s.cardDecks)return null;return s.cardDecks.filter(function(x){return x.id===s.routineDeckId;})[0]||null;}
 // 이번주 월요일 날짜 반환
 function getThisWeekMonday(){
   var d=new Date();d.setHours(0,0,0,0);
@@ -504,7 +511,7 @@ var S={
   isAdmin:false,loggedMember:null,adminErr:'',memberErr:'',selMemId:'',
   newMember:'',expandedMem:null,expandedStudy:null,expandedMemCat:{},expandedMemSt:{},expandedVmCat:{},expandedVmSt:{},rptTab:'chart',
   chgErr:'',chgOk:'',viewMemberId:null,
-  settingsTab:'study',expandedWeek:null,expandedCI:{},routineWeekOffset:{},rtnTab:{},calMemoKey:null,mpRtnYMs:{},routineCalSid:null,routineCalMem:null,routineCalYM:'',dragSid:null,catOrder:[],expandedCat:{},expandedStudyCard:{},skipWeeks:[],expandedCardMgr:{},expandedCardDeck:{},expandedCardDeckCI:{},
+  settingsTab:'study',expandedWeek:null,expandedCI:{},routineWeekOffset:{},rtnTab:{},calMemoKey:null,mpRtnYMs:{},routineCalSid:null,routineCalMem:null,routineCalYM:'',dragSid:null,catOrder:[],expandedCat:{},expandedStudyCard:{},skipWeeks:[],expandedCardMgr:{},expandedCardDeck:{},expandedCardDeckCI:{},rtnCardPopupKey:null,rtnCardFilter:'',
   calYear:new Date().getFullYear(),calMonth:new Date().getMonth(),events:{},notices:{},
   editNoticeId:null,expandedNotice:{},expandedSnotice:{},editSnoticeId:null,expandedWnote:{},expandedStudyMem:{},editNoticeId:null,expandedNotice:{},
   rptMode:'study',rptSid:'',rptMid:'',rptWeek:'',editKey:null
@@ -558,6 +565,9 @@ function rApp(){
   if(S.routineCalSid&&S.routineCalMem){
     pageContent+=rRoutineCal(S.routineCalSid,S.routineCalMem,S.routineCalYM);
   }
+  if(S.rtnCardPopupKey){
+    pageContent+=rRoutineCardPopup();
+  }
   return h+pageContent;
 }
 function rML(){
@@ -592,6 +602,7 @@ function rRoutineStudy(s, m, showLeave){
   var todayMemo=rtnMemo(s.id,todayKey,m.id);
   var doneCnt=days.filter(function(d){return rtnCk(s.id,toDateKey(d),m.id)==='done';}).length;
   var diaCnt=getRoutineDiamondCount(s.id,m.id);
+  var rDeck=routineDeck(s);
 
   var h='<div style="background:var(--wh);border:1.5px solid '+(todaySt==='done'?'var(--pr)':todaySt==='vacation'?'#3B82F6':'#F3D0E9')+';border-radius:var(--r);overflow:hidden;margin-left:4px;margin-bottom:6px;">';
 
@@ -605,12 +616,16 @@ function rRoutineStudy(s, m, showLeave){
   h+='<span style="font-size:12px;color:var(--mu);cursor:pointer;" data-expci="'+s.id+'">'+(isExpCI?'▲':'▼')+'</span>';
   h+='</div>';
 
-  // 오늘: 날짜 + 인증/휴가(크게) + 메모(짧게)
+  // 오늘: 날짜 + 인증/휴가(크게) + 메모(짧게) + (연결된 카드덱 있으면) 카드선택
   h+='<div style="font-size:11px;color:var(--mu);margin-bottom:6px;">오늘 '+toKorDate(today)+'</div>';
-  h+='<div style="display:flex;align-items:center;gap:6px;">';
+  h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
   h+='<button data-rtn-ck="'+s.id+'__'+todayKey+'__'+m.id+'__done" style="flex:1;padding:8px 0;border-radius:var(--rs);border:none;cursor:pointer;font-size:14px;font-weight:700;background:'+(todaySt==='done'?'var(--pr)':'#DCFCE7')+';color:'+(todaySt==='done'?'#fff':'#16A34A')+';">✅ 인증</button>';
   h+='<button data-rtn-ck="'+s.id+'__'+todayKey+'__'+m.id+'__vacation" style="flex:1;padding:8px 0;border-radius:var(--rs);border:none;cursor:pointer;font-size:14px;font-weight:700;background:'+(todaySt==='vacation'?'#2563EB':'#DBEAFE')+';color:'+(todaySt==='vacation'?'#fff':'#2563EB')+';">🏖️ 휴가</button>';
   h+='<input data-rtn-memo="'+s.id+'__'+todayKey+'__'+m.id+'" placeholder="메모" value="'+esc(todayMemo)+'" style="width:80px;flex-shrink:0;font-size:11px;padding:8px 7px;border-radius:var(--rs);border:1px solid var(--br);background:var(--wh);color:var(--tx);" maxlength="30">';
+  if(rDeck){
+    var todayCards=rtnCards(s.id,todayKey,m.id);
+    h+='<button data-rtn-cardpop="'+s.id+'__'+todayKey+'__'+m.id+'" style="flex-shrink:0;padding:8px 10px;border-radius:var(--rs);border:1px solid var(--br);cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;background:'+(todayCards.length?'var(--prl)':'var(--wh)')+';color:'+(todayCards.length?'var(--pr)':'var(--mu)')+';">🎴'+(todayCards.length?' '+todayCards.length:'')+'</button>';
+  }
   h+='</div>';
   h+='</div>';
 
@@ -649,6 +664,10 @@ function rRoutineStudy(s, m, showLeave){
           h+='<button data-rtn-ck="'+s.id+'__'+dk+'__'+m.id+'__done" style="padding:2px 7px;border-radius:20px;border:none;cursor:pointer;font-size:10px;font-weight:700;flex-shrink:0;background:'+(st==='done'?'var(--pr)':'#DCFCE7')+';color:'+(st==='done'?'#fff':'#16A34A')+';">✅</button>';
           h+='<button data-rtn-ck="'+s.id+'__'+dk+'__'+m.id+'__vacation" style="padding:2px 7px;border-radius:20px;border:none;cursor:pointer;font-size:10px;font-weight:700;flex-shrink:0;background:'+(st==='vacation'?'#2563EB':'#DBEAFE')+';color:'+(st==='vacation'?'#fff':'#2563EB')+';">🏖️</button>';
           h+='<input data-rtn-memo="'+s.id+'__'+dk+'__'+m.id+'" placeholder="메모..." value="'+esc(memo)+'" style="flex:1;min-width:0;font-size:10px;padding:2px 6px;border-radius:8px;border:1px solid var(--br);background:var(--wh);color:var(--tx);" maxlength="40">';
+          if(rDeck){
+            var dCards=rtnCards(s.id,dk,m.id);
+            h+='<button data-rtn-cardpop="'+s.id+'__'+dk+'__'+m.id+'" style="padding:2px 7px;border-radius:20px;border:1px solid var(--br);cursor:pointer;font-size:10px;font-weight:700;flex-shrink:0;background:'+(dCards.length?'var(--prl)':'var(--wh)')+';color:'+(dCards.length?'var(--pr)':'var(--mu)')+';">🎴'+(dCards.length?dCards.length:'')+'</button>';
+          }
         } else {
           h+='<span style="font-size:10px;color:var(--mu);">예정</span>';
         }
@@ -730,10 +749,12 @@ function rRoutineCal(sid, mid, ym){
     var bg=st==='done'?'var(--pr)':st==='vacation'?'#3B82F6':isWeekend?'#FEF2F2':'#F8F9FA';
     var txtCol=st==='done'||st==='vacation'?'#fff':isWeekend?'#EF4444':'var(--tx)';
     var calMemo=rtnMemo(sid,dk,mid);
+    var calCards=rtnCards(sid,dk,mid);
     h+='<div style="position:relative;">';
     h+='<div '+((!isFuture)?'data-cal-memo="'+sid+'__'+dk+'__'+mid+'" style="cursor:pointer;"':'style=""')+'>';
     h+='<div style="aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:'+bg+';color:'+txtCol+';'+(isFuture?'opacity:.3':'')+' position:relative;">'+d+'</div>';
     if(calMemo)h+='<div style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;background:#F59E0B;border-radius:50%;border:1.5px solid #fff;"></div>';
+    if(calCards.length)h+='<div title="'+calCards.length+'장"'+' style="position:absolute;top:-1px;right:-1px;width:7px;height:7px;background:#7B2FF7;border-radius:50%;border:1.5px solid #fff;"></div>';
     h+='</div>';
     h+='</div>';
   }
@@ -755,8 +776,10 @@ function rCalMemoPopup(){
   var cDate=new Date(cDk.replace(/-/g,'/'));
   var cDays=['일','월','화','수','목','금','토'];
   var cLabel=(cDate.getMonth()+1)+'월 '+cDate.getDate()+'일('+cDays[cDate.getDay()]+')';
+  var cStudy=S.studies.filter(function(x){return x.id===cSid;})[0];
+  var cDeck=cStudy?routineDeck(cStudy):null;
   var h='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center;" id="cal-memo-overlay">';
-  h+='<div style="background:var(--wh);border-radius:var(--r);padding:1.25rem;width:min(320px,88vw);">';
+  h+='<div style="background:var(--wh);border-radius:var(--r);padding:1.25rem;width:min(340px,90vw);max-height:85vh;overflow-y:auto;box-sizing:border-box;">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
   h+='<span style="font-size:14px;font-weight:700;color:var(--pr);">📝 '+cLabel+' 메모</span>';
   h+='<button id="cal-memo-close" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--mu);">✕</button>';
@@ -766,6 +789,55 @@ function rCalMemoPopup(){
   h+='<button id="cal-memo-save" style="flex:1;padding:8px;border-radius:var(--rs);border:none;background:var(--pr);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">저장</button>';
   h+='<button id="cal-memo-del" style="padding:8px 14px;border-radius:var(--rs);border:1px solid var(--br);background:var(--wh);color:var(--mu);font-size:13px;cursor:pointer;">삭제</button>';
   h+='</div>';
+  if(cDeck)h+=rRoutineCardPickerHtml(cSid,cDk,cMid,cDeck);
+  h+='</div></div>';
+  return h;
+}
+// 루틴 카드 선택 UI (검색 + 체크박스 목록). 메모 팝업 / 전용 카드 팝업 공용
+function rRoutineCardPickerHtml(sid,dk,mid,deck){
+  if(!deck)return '';
+  var picked=rtnCards(sid,dk,mid);
+  var filter=(S.rtnCardFilter||'').trim().toLowerCase();
+  var cards=deck.cards||[];
+  var shown=filter?cards.filter(function(c){return c.name.toLowerCase().indexOf(filter)>=0;}):cards;
+  var h='<div style="margin-top:12px;border-top:1px solid #F3D0E9;padding-top:10px;">';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--pr);margin-bottom:6px;">🎴 '+esc(deck.name)+' · '+picked.length+'장 선택됨</div>';
+  h+='<input type="text" id="rtn-card-filter" placeholder="카드 이름 검색..." value="'+esc(S.rtnCardFilter||'')+'" style="width:100%;padding:.4rem .6rem;border-radius:8px;border:1.5px solid var(--br);font-size:12px;margin-bottom:8px;box-sizing:border-box;">';
+  h+='<div style="max-height:220px;overflow-y:auto;border:1px solid #F3D0E9;border-radius:8px;padding:.3rem;">';
+  if(!cards.length){
+    h+='<div style="font-size:12px;color:var(--mu);text-align:center;padding:.75rem;">덱에 등록된 카드가 없어요</div>';
+  } else if(!shown.length){
+    h+='<div style="font-size:12px;color:var(--mu);text-align:center;padding:.75rem;">검색 결과가 없어요</div>';
+  } else {
+    shown.forEach(function(c){
+      var on=picked.indexOf(c.id)>=0;
+      h+='<label style="display:flex;align-items:center;gap:8px;padding:.3rem .4rem;border-radius:8px;cursor:pointer;'+(on?'background:var(--prl);':'')+'">'+
+        '<input type="checkbox" data-rtn-cardtog="'+sid+'__'+dk+'__'+mid+'__'+c.id+'"'+(on?' checked':'')+' style="width:15px;height:15px;accent-color:var(--pr);flex-shrink:0;">'+
+        '<span style="font-size:13px;color:var(--tx);">'+esc(c.name)+'</span>'+
+      '</label>';
+    });
+  }
+  h+='</div></div>';
+  return h;
+}
+// 루틴 카드선택 전용 팝업 (메모 없이 카드만, 🎴 버튼에서 호출)
+function rRoutineCardPopup(){
+  if(!S.rtnCardPopupKey)return '';
+  var p=S.rtnCardPopupKey.split('__');var sid=p[0],dk=p[1],mid=p[2];
+  var s=S.studies.filter(function(x){return x.id===sid;})[0];
+  if(!s)return '';
+  var deck=routineDeck(s);
+  if(!deck)return '';
+  var dateObj=new Date(dk.replace(/-/g,'/'));
+  var days=['일','월','화','수','목','금','토'];
+  var label=(dateObj.getMonth()+1)+'월 '+dateObj.getDate()+'일('+days[dateObj.getDay()]+')';
+  var h='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center;" id="rtn-card-overlay">';
+  h+='<div style="background:var(--wh);border-radius:var(--r);padding:1.1rem;width:min(360px,90vw);max-height:85vh;overflow-y:auto;box-sizing:border-box;">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;">';
+  h+='<span style="font-size:14px;font-weight:700;color:var(--pr);">'+esc(s.name)+' · '+label+'</span>';
+  h+='<button id="rtn-card-close" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--mu);">✕</button>';
+  h+='</div>';
+  h+=rRoutineCardPickerHtml(sid,dk,mid,deck);
   h+='</div></div>';
   return h;
 }
@@ -2124,6 +2196,16 @@ function rST(){
               '</div>'
             :'')+
           '</div>'+
+          // 루틴 카드덱 연결 (루틴 체크 카테고리만, 날짜 체크할 때 카드 선택 가능해짐)
+          (cat==='루틴 체크'?
+            '<div style="border-top:1px solid #F3D0E9;padding:.5rem .75rem;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'+
+              '<span style="font-size:12px;color:var(--mu);white-space:nowrap;">🎴 루틴 카드덱 연결:</span>'+
+              '<select data-routinedeck="'+s.id+'" style="flex:1;min-width:120px;padding:.3rem .5rem;border-radius:8px;border:1.5px solid var(--br);font-size:12px;background:var(--wh);">'+
+                '<option value="">선택 안함</option>'+
+                (s.cardDecks||[]).map(function(cd){return '<option value="'+cd.id+'"'+(s.routineDeckId===cd.id?' selected':'')+'>'+esc(cd.name)+'</option>';}).join('')+
+              '</select>'+
+            '</div>'
+          :'')+
           // 주차 관리 섹션 (루틴 체크 카테고리는 숨김)
           (cat==='루틴 체크'?'':'<div style="border-top:1px solid #F3D0E9;">'+
             '<div style="display:flex;align-items:center;gap:5px;padding:.35rem .75rem;background:#FAFAFA;">'+
@@ -2669,6 +2751,7 @@ function bAll(){
     if(el){
       e.stopPropagation();
       S.calMemoKey=el.dataset.calMemo;
+      S.rtnCardPopupKey=null;S.rtnCardFilter='';
       render();
       setTimeout(function(){var t=document.getElementById('cal-memo-input');if(t)t.focus();},50);
     }
@@ -2692,6 +2775,42 @@ function bAll(){
   on('cal-memo-close',function(){S.calMemoKey=null;render();});
   var calMemoOverlay=document.getElementById('cal-memo-overlay');
   if(calMemoOverlay)calMemoOverlay.addEventListener('click',function(e){if(e.target===calMemoOverlay){S.calMemoKey=null;render();}});
+  // 루틴 카드덱 연결 선택 (관리자)
+  qsa('[data-routinedeck]',function(el){el.addEventListener('change',function(){
+    var sid=el.dataset.routinedeck;
+    var s=S.studies.filter(function(x){return x.id===sid;})[0];if(!s)return;
+    s.routineDeckId=el.value||'';
+    persist();
+  });});
+  // 루틴 카드선택 팝업 열기 (🎴 버튼)
+  qsa('[data-rtn-cardpop]',function(el){el.addEventListener('click',function(e){
+    e.stopPropagation();
+    S.rtnCardPopupKey=el.dataset.rtnCardpop;
+    S.rtnCardFilter='';
+    S.calMemoKey=null;
+    render();
+  });});
+  // 루틴 카드 체크박스 토글
+  qsa('[data-rtn-cardtog]',function(el){el.addEventListener('change',function(){
+    var p=el.dataset.rtnCardtog.split('__');var sid=p[0],dk=p[1],mid=p[2],cid=p[3];
+    toggleRtnCard(sid,dk,mid,cid);
+    render();persistCk(ckPatchOf(rtnCardsKey(sid,dk,mid)));
+  });});
+  // 루틴 카드 검색창 (실시간 필터)
+  var rcf=g('rtn-card-filter');
+  if(rcf){
+    rcf.addEventListener('input',function(){
+      var val=rcf.value;
+      S.rtnCardFilter=val;
+      render();
+      var t=g('rtn-card-filter');
+      if(t){t.focus();var L=val.length;try{t.setSelectionRange(L,L);}catch(e){}}
+    });
+  }
+  // 루틴 카드선택 전용 팝업 닫기
+  on('rtn-card-close',function(){S.rtnCardPopupKey=null;S.rtnCardFilter='';render();});
+  var rtnCardOverlay=document.getElementById('rtn-card-overlay');
+  if(rtnCardOverlay)rtnCardOverlay.addEventListener('click',function(e){if(e.target===rtnCardOverlay){S.rtnCardPopupKey=null;S.rtnCardFilter='';render();}});
   // 루틴 달력 닫기
   on('rtn-cal-close',function(){S.routineCalSid=null;S.routineCalMem=null;S.routineCalYM='';render();});
   var rtnModal=document.getElementById('rtn-cal-modal');
