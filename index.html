@@ -804,7 +804,7 @@ function rCalMemoPopup(){
   var cStudy=S.studies.filter(function(x){return x.id===cSid;})[0];
   var cDeck=cStudy?routineDeck(cStudy):null;
   var h='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center;" id="cal-memo-overlay">';
-  h+='<div style="background:var(--wh);border-radius:var(--r);padding:1.25rem;width:min(340px,90vw);max-height:85vh;overflow-y:auto;box-sizing:border-box;">';
+  h+='<div id="rtn-popup-body" style="background:var(--wh);border-radius:var(--r);padding:1.25rem;width:min(340px,90vw);max-height:85vh;overflow-y:auto;box-sizing:border-box;">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
   h+='<span style="font-size:14px;font-weight:700;color:var(--pr);">📝 '+cLabel+' 메모</span>';
   h+='<button id="cal-memo-close" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--mu);">✕</button>';
@@ -886,7 +886,7 @@ function rRoutineCardPopup(){
   var days=['일','월','화','수','목','금','토'];
   var label=(dateObj.getMonth()+1)+'월 '+dateObj.getDate()+'일('+days[dateObj.getDay()]+')';
   var h='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center;" id="rtn-card-overlay">';
-  h+='<div style="background:var(--wh);border-radius:var(--r);padding:1.1rem;width:min(360px,90vw);max-height:85vh;overflow-y:auto;box-sizing:border-box;">';
+  h+='<div id="rtn-popup-body" style="background:var(--wh);border-radius:var(--r);padding:1.1rem;width:min(360px,90vw);max-height:85vh;overflow-y:auto;box-sizing:border-box;">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;">';
   h+='<span style="font-size:14px;font-weight:700;color:var(--pr);">'+esc(s.name)+' · '+label+'</span>';
   h+='<button id="rtn-card-close" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--mu);">✕</button>';
@@ -2901,14 +2901,16 @@ function bAll(){
     S.calMemoKey=null;
     render();
   });});
-  // 루틴 카드 체크박스 토글 (스크롤 위치 유지)
+  // 루틴 카드 체크박스 토글 (스크롤 위치 유지 - 카드 목록 + 팝업 전체 둘 다)
   qsa('[data-rtn-cardtog]',function(el){el.addEventListener('change',function(){
     var p=el.dataset.rtnCardtog.split('__');var sid=p[0],dk=p[1],mid=p[2],cid=p[3];
     toggleRtnCard(sid,dk,mid,cid);
     var listEl=g('rtn-card-list');var sTop=listEl?listEl.scrollTop:0;
+    var bodyEl=g('rtn-popup-body');var bTop=bodyEl?bodyEl.scrollTop:0;
     render();
     persistCk(ckPatchOf(rtnCardsKey(sid,dk,mid)));
     try{var nl=g('rtn-card-list');if(nl)nl.scrollTop=sTop;}catch(e){}
+    try{var nb=g('rtn-popup-body');if(nb)nb.scrollTop=bTop;}catch(e){}
   });});
   // 루틴 카드 검색창 (실시간 필터)
   var rcf=g('rtn-card-filter');
