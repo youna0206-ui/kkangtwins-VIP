@@ -908,10 +908,23 @@ function rCI(){
   }
   var my=S.studies.filter(function(s){return s.active&&(m.studyIds||[]).indexOf(s.id)>=0;});
   var st=mCurSt(m);
-  var h='<div class="stack"><div class="sec rb" style="padding:.875rem 1rem;">'+
+  var ciTot=mTotSt(m);
+  var ciBadges=getMemberBadges(m);
+  var ciG=ciBadges.filter(function(b){return b.badge.badge==='🥇';}).length;
+  var ciS=ciBadges.filter(function(b){return b.badge.badge==='🥈';}).length;
+  var ciD=ciBadges.filter(function(b){return b.badge.badge==='💎';}).length;
+  var ciMedalStr=(ciG||ciS||ciD)?('🥇'+ciG+' 🥈'+ciS+' 💎'+ciD):'-';
+  var h='<div class="stack"><div class="sec">'+
+    '<div class="rb" style="margin-bottom:10px;">'+
     '<div><div style="font-size:15px;font-weight:700;">'+esc(m.name)+'님 👋</div>'+
     '<div style="font-size:12px;color:var(--mu);margin-top:2px;">이번주 ✅'+st.done+' / 열린주차 '+st.total+'개</div></div>'+
-    '<div style="font-size:20px;font-weight:700;color:'+(st.pct===100?'var(--gr)':'var(--pr)')+';">'+st.pct+'%</div></div>';
+    '<div style="font-size:20px;font-weight:700;color:'+(st.pct===100?'var(--gr)':'var(--pr)')+';">'+st.pct+'%</div></div>'+
+    '<div style="display:flex;gap:8px;">'+
+    '<div class="stat-box"><div class="stat-label">참여 스터디</div><div class="stat-num" style="color:var(--pr);">'+ciTot.cnt+'</div></div>'+
+    '<div class="stat-box"><div class="stat-label">✅ 인증완료</div><div class="stat-num" style="font-size:18px;color:var(--gr);">'+ciTot.dw+'/'+ciTot.tw+'주</div></div>'+
+    '<div class="stat-box"><div class="stat-label">🏅 메달</div><div class="stat-num" style="font-size:16px;color:var(--tx);">'+ciMedalStr+'</div></div>'+
+    '</div>'+
+  '</div></div>';
   if(!my.length)h+='<div class="empty">참여 스터디 없어요<br><span style="font-size:12px;">📝 스터디 신청 탭에서 신청하세요</span></div>';
   // 카테고리별 그룹핑
   var ciCats=[];
@@ -1077,12 +1090,17 @@ function rMP(){
   if(!m)return S.isAdmin?'<div class="sec" style="text-align:center;font-size:14px;color:var(--mu);">강둥맘 멤버를 찾을 수 없어요. 설정에서 이름에 "강둥맘"이 포함된 멤버를 추가해주세요.</div>':rML();
   var my=S.studies.filter(function(s){return s.active&&(m.studyIds||[]).indexOf(s.id)>=0;});
   var tot=mTotSt(m);
+  var mpBadges=getMemberBadges(m);
+  var mpG=mpBadges.filter(function(b){return b.badge.badge==='🥇';}).length;
+  var mpS=mpBadges.filter(function(b){return b.badge.badge==='🥈';}).length;
+  var mpD=mpBadges.filter(function(b){return b.badge.badge==='💎';}).length;
+  var mpMedalStr=(mpG||mpS||mpD)?('🥇'+mpG+' 🥈'+mpS+' 💎'+mpD):'-';
   var h='<div class="stack"><div class="sec">'+
     '<div style="font-size:15px;font-weight:700;margin-bottom:8px;">'+esc(m.name)+'님 전체 현황</div>'+
-    '<div style="display:flex;gap:8px;margin-bottom:8px;">'+
+    '<div style="display:flex;gap:6px;margin-bottom:8px;">'+
     '<div class="stat-box"><div class="stat-label">참여 스터디</div><div class="stat-num" style="color:var(--pr);">'+tot.cnt+'</div></div>'+
-    '<div class="stat-box"><div class="stat-label">✅ 인증완료</div><div class="stat-num" style="color:var(--gr);">'+tot.dw+'주</div></div>'+
-    '<div class="stat-box"><div class="stat-label">전체 주차</div><div class="stat-num" style="color:var(--mu);">'+tot.tw+'주</div></div>'+
+    '<div class="stat-box"><div class="stat-label">✅ 인증완료</div><div class="stat-num" style="font-size:18px;color:var(--gr);">'+tot.dw+'/'+tot.tw+'주</div></div>'+
+    '<div class="stat-box"><div class="stat-label">🏅 메달</div><div class="stat-num" style="font-size:16px;color:var(--tx);">'+mpMedalStr+'</div></div>'+
     '</div><div class="pb" style="height:12px;"><div class="pb-f" style="width:'+tot.pct+'%;"></div></div>'+
     '<div style="text-align:right;font-size:12px;color:var(--mu);">누적 인증률 '+tot.pct+'%</div></div>';
   // 카테고리별 그룹핑
